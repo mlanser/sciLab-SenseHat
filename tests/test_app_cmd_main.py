@@ -6,7 +6,7 @@ import pytest
 
 from click.testing import CliRunner
 
-from firstapp import cli
+from src import cli
 
 
 @pytest.fixture

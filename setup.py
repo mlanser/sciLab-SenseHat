@@ -45,7 +45,7 @@ setup(
     description="Testing boilerplate code for Click app",
     entry_points={
         'console_scripts': [
-            'firstapp=firstapp.cli:main',
+            'firstapp=src.cli:main',
         ],
     },
     install_requires=requirements,
@@ -54,7 +54,7 @@ setup(
     include_package_data=True,
     keywords='firstapp',
     name='firstapp',
-    packages=find_packages(include=['firstapp', 'firstapp.*']),
+    packages=find_packages(include=['src', 'src.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
