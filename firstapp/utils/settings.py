@@ -108,7 +108,7 @@ def _validate_data_settings(settings):
 #           ~/speedtest.json
 #           ~/ntwkmgr.sqlite            - SQLite file can hold several tables
 #
-def _get_speedtest_settings(ctxGlobals):
+def _get_main_settings(ctxGlobals):
     defaults = {
         'count': 1, 'sleep': 60, 'threads': 'multi', 'unit': 'bits', 'share': False, 
         'location': None, 'locationTZ': None, 
@@ -163,16 +163,16 @@ def _get_speedtest_settings(ctxGlobals):
     )
     
     if storage.lower() == _CSV_:
-        settings = _get_speedtest_settings_CSV(defaults, ctxGlobals)
+        settings = _get_main_settings_CSV(defaults, ctxGlobals)
         
     elif storage.lower() == _JSON_:
-        settings = _get_speedtest_settings_JSON(defaults, ctxGlobals)
+        settings = _get_main_settings_JSON(defaults, ctxGlobals)
         
     elif storage.lower() == _SQLite_:
-        settings = _get_speedtest_settings_SQLite(defaults, ctxGlobals)
+        settings = _get_main_settings_SQLite(defaults, ctxGlobals)
         
     # elif storage.lower() == _API_:
-    #    settings = _get_speedtest_settings_API(defaults, ctxGlobals)
+    #    settings = _get_main_settings_API(defaults, ctxGlobals)
         
     else:
         raise ValueError("Invalid storage type '{}'".format(storage))
@@ -188,10 +188,10 @@ def _get_speedtest_settings(ctxGlobals):
         ('storage', storage),
     ])
 
-    return {_SCTN_SPEED_: settings}
+    return {_SCTN_MAIN_: settings}
 
 
-def _get_speedtest_settings_CSV(defaults, ctxGlobals):
+def _get_main_settings_CSV(defaults, ctxGlobals):
     host = click.prompt(
         "Enter path to CSV data file",
         type=click.Path(),
@@ -203,7 +203,7 @@ def _get_speedtest_settings_CSV(defaults, ctxGlobals):
     return defaults
     
     
-def _get_speedtest_settings_JSON(defaults, ctxGlobals):
+def _get_main_settings_JSON(defaults, ctxGlobals):
     host = click.prompt(
         "Enter path to JSON data file",
         type=click.Path(),
@@ -215,7 +215,7 @@ def _get_speedtest_settings_JSON(defaults, ctxGlobals):
     return defaults
 
 
-def _get_speedtest_settings_SQLite(defaults, ctxGlobals):
+def _get_main_settings_SQLite(defaults, ctxGlobals):
     host = click.prompt(
         "Enter path to SQLite database.\nNote: ':memory:' is not supported.",
         type=click.Path(),
@@ -232,7 +232,7 @@ def _get_speedtest_settings_SQLite(defaults, ctxGlobals):
     return defaults
 
 
-def _get_speedtest_settings_API(defaults, ctxGlobals):
+def _get_main_settings_API(defaults, ctxGlobals):
     pass
 #    host = click.prompt(
 #        "Enter database URL (protocal, host, and port)",
@@ -259,25 +259,25 @@ def _get_speedtest_settings_API(defaults, ctxGlobals):
 #    return defaults
 
 
-def _validate_speedtest_settings(settings):
+def _validate_main_settings(settings):
     #
     # @NOTE - we can only verify that values are stored
     #         in config, but not that they're correct.
     #
-    if not settings.has_option(_SCTN_SPEED_, 'host'):
+    if not settings.has_option(_SCTN_MAIN_, 'host'):
         return False
 
     return True
 
 
 def _verify_datastore(settings):
-    if not settings.has_section(_SCTN_SPEED_):
-        return "- Data store not defined in '{}' section".format(_SCTN_SPEED_)
+    if not settings.has_section(_SCTN_MAIN_):
+        return "- Data store not defined in '{}' section".format(_SCTN_MAIN_)
 
     try:
-        get_speed_data(settings[_SCTN_SPEED_], 1, True)
+        get_speed_data(settings[_SCTN_MAIN_], 1, True)
     except OSError:
-        return "- Unable to access data store '{}'".format(settings[_SCTN_SPEED_].get('host'))
+        return "- Unable to access data store '{}'".format(settings[_SCTN_MAIN_].get('host'))
 
     return '- Data store OK!'
 
@@ -328,7 +328,7 @@ def isvalid_settings(settings):
     if not _validate_data_settings(settings):
         return False
 
-    if not _validate_speedtest_settings(settings):
+    if not _validate_main_settings(settings):
         return False
     
     if not _validate_sometest_settings(settings):
@@ -375,7 +375,7 @@ def save_settings(ctxGlobals, section, overwrite=False):
         OSError:    If config file already exists.
     """
 
-    if not section.lower() in [_SCTN_WIFI_, _SCTN_DATA_, 'test', 'all']:
+    if not section.lower() in [_SCTN_DATA_, 'test', 'all']:
         raise ValueError("Invalid section '{}'".format(section))
 
     config = ConfigParser(interpolation=ExtendedInterpolation(), allow_no_value=True)
@@ -389,15 +389,11 @@ def save_settings(ctxGlobals, section, overwrite=False):
     else:
         raise OSError("Config file '{}' already exists.\n\nPlease use '--force' flag to overwrite it.".format(ctxGlobals['configFName']))
 
-    if section in ['all', _SCTN_WIFI_]:
-        config.read_dict(_get_wifi_settings(ctxGlobals))
-
     if section in ['all', _SCTN_DATA_]:
         config.read_dict(_get_data_settings(ctxGlobals))
 
     if section in ['all', 'test']:
-        config.read_dict(_get_speedtest_settings(ctxGlobals))
-        config.read_dict(_get_sometest_settings(ctxGlobals))
+        config.read_dict(_get_main_settings(ctxGlobals))
 
     with open(ctxGlobals['configFName'], 'w') as configFile:
         config.write(configFile)
@@ -416,22 +412,10 @@ def show_settings(ctxGlobals, section, verify=False):
         OSError:    If unable to read config file.
     """
 
-    if not section.lower() in [_SCTN_WIFI_, _SCTN_DATA_, 'test', 'all']:
+    if not section.lower() in [_SCTN_DATA_, 'test', 'all']:
         raise ValueError("Invalid section '{}'".format(section))
 
     settings = read_settings(ctxGlobals)
-
-    if section in ['all', _SCTN_WIFI_]:
-        #
-        # [wifi]
-        # ssid = <some SSID>
-        # security = WPA|WPA2|WEP
-        # password = <some wifi password>
-        #
-        click.echo("\n--- [Settings: wifi] ----------")
-        click.echo("SSID:               {}".format(_get_option_val(settings, _SCTN_WIFI_, 'ssid', verify)))
-        click.echo("Security:           {}".format(_get_option_val(settings, _SCTN_WIFI_, 'security', verify)))
-        click.echo("Password:           {}".format(_get_option_val(settings, _SCTN_WIFI_, 'password', verify)))
 
     if section in ['all', _SCTN_DATA_]:
         # [data]
@@ -470,21 +454,17 @@ def show_settings(ctxGlobals, section, verify=False):
         # dbname = <db name>                    - Used for SQLite
         #
         click.echo("SpeedTest Settings")
-        click.echo("  Test Run Count:   {}".format(_get_option_val(settings, _SCTN_SPEED_, 'count', verify)))
-        click.echo("  Sleep/Wait Time:  {}".format(_get_option_val(settings, _SCTN_SPEED_, 'sleep', verify)))
-        click.echo("  Threads:          {}".format(_get_option_val(settings, _SCTN_SPEED_, 'threads', verify)))
-        click.echo("  Speed Rate Unit:  {}".format(_get_option_val(settings, _SCTN_SPEED_, 'unit', verify)))
-        click.echo("  Share Results:    {}".format(_get_option_val(settings, _SCTN_SPEED_, 'share', verify)))
-        click.echo("  Location Name:    {}".format(_get_option_val(settings, _SCTN_SPEED_, 'location', verify)))
-        click.echo("  Location TZ:      {}".format(_get_option_val(settings, _SCTN_SPEED_, 'locationTZ', verify)))
-        click.echo("  DB Storage Type:  {}".format(_get_option_val(settings, _SCTN_SPEED_, 'storage', verify)))
-        click.echo("  DB Host:          {}".format(_get_option_val(settings, _SCTN_SPEED_, 'host', verify)))
-        click.echo("  DB Table:         {}".format(_get_option_val(settings, _SCTN_SPEED_, 'dbtable', verify)))
-        click.echo("  DB Name:          {}".format(_get_option_val(settings, _SCTN_SPEED_, 'dbname', verify)))
-
-        click.echo("\nSome Other Test Settings")
-        click.echo("  CLI URI:          {}".format(_get_option_val(settings, 'sometest', 'uri', verify)))
-        click.echo("  CLI params:       {}".format(_get_option_val(settings, 'sometest', 'params', verify)))
+        click.echo("  Test Run Count:   {}".format(_get_option_val(settings, _SCTN_MAIN_, 'count', verify)))
+        click.echo("  Sleep/Wait Time:  {}".format(_get_option_val(settings, _SCTN_MAIN_, 'sleep', verify)))
+        click.echo("  Threads:          {}".format(_get_option_val(settings, _SCTN_MAIN_, 'threads', verify)))
+        click.echo("  Speed Rate Unit:  {}".format(_get_option_val(settings, _SCTN_MAIN_, 'unit', verify)))
+        click.echo("  Share Results:    {}".format(_get_option_val(settings, _SCTN_MAIN_, 'share', verify)))
+        click.echo("  Location Name:    {}".format(_get_option_val(settings, _SCTN_MAIN_, 'location', verify)))
+        click.echo("  Location TZ:      {}".format(_get_option_val(settings, _SCTN_MAIN_, 'locationTZ', verify)))
+        click.echo("  DB Storage Type:  {}".format(_get_option_val(settings, _SCTN_MAIN_, 'storage', verify)))
+        click.echo("  DB Host:          {}".format(_get_option_val(settings, _SCTN_MAIN_, 'host', verify)))
+        click.echo("  DB Table:         {}".format(_get_option_val(settings, _SCTN_MAIN_, 'dbtable', verify)))
+        click.echo("  DB Name:          {}".format(_get_option_val(settings, _SCTN_MAIN_, 'dbname', verify)))
 
     if verify:
         #

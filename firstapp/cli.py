@@ -311,14 +311,14 @@ def new_speed_data(settings, numRuns, unit, display, summary: bool, save: bool):
 # ---------------------------------------------------------
 @click.group()
 @click.option(
-    '--config',
+    '--ini',
     type=click.Path(),
     default=os.path.join(click.get_app_dir(_APP_NAME_), _APP_CONFIG_),
-    help='Name of config file to use.',
+    help="Name of '*.ini' file to use.",
 )
 @click.pass_context
-def main(ctx, config: str = ''):
-    """Check and log internet speed and related metrics for current connection.
+def main(ctx, ini: str = ''):
+    """Check and log <some test> and related metrics.
 
     This tool can check and log the <some crazy stats> on demand. To continuously
     check and log <some crazy stats>, simply use cron (or similar) to run
@@ -327,7 +327,7 @@ def main(ctx, config: str = ''):
     ctx.obj = {
         'globals': {
             'appName': _APP_NAME_,
-            'configFName': os.path.expanduser(config),
+            'configFName': os.path.expanduser(ini),
             'appMinRuns': _APP_MIN_RUNS_,
             'appMaxRuns': _APP_MAX_RUNS_,
             'appHistory': _APP_HISTORY_,
@@ -442,8 +442,10 @@ def config(ctx, section: str, update: bool, force: bool, verify: bool):
     help="Show 'first' or 'last' 'count' number of previously saved speed tests.",
 )
 @click.pass_context
-def speedtest(ctx, display: str, save: bool, summary_only: bool, cntr: int, history: bool, first: bool):
-    """Get speed test data.
+def dothing(ctx, display: str, save: bool, summary_only: bool, cntr: int, history: bool, first: bool):
+    """This is the main thing that this app does.
+    
+    Replace this text with whatever this things does :-)
 
     \b
     Speed data samples are retrieved/stored as follows:
