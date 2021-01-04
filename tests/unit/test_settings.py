@@ -115,4 +115,27 @@ def test_show_settings_invalid_sctn(capsys, valid_config_ini):
     
     exMsg = excinfo.value.args[0]
     assert exMsg == "Invalid section '--INVALID--'"    
+
+    
+def test_show_settings_sctn_MAIN_w_verify(capsys, valid_config_ini, invalid_config_ini):
+    configFName = valid_config_ini
+    ctxGlobals = {'configFName':configFName}
+
+    src.utils.settings.show_settings(ctxGlobals, src.utils.settings._SCTN_MAIN_, True)
+    out, err = capsys.readouterr()
+    
+    assert _HDR_DATA_ in out
+    assert 'Default Sort:       first' in out
+    assert _HDR_MAIN_ in out
+    assert 'Test Run Count:   1' in out
+
+    configFName = invalid_config_ini
+    ctxGlobals = {'configFName':configFName}
+
+    with capsys.disabled:
+      src.utils.settings.show_settings(ctxGlobals, src.utils.settings._SCTN_MAIN_, True)
+    #out, err = capsys.readouterr()
+    
+    #assert _HDR_DATA_ in out
+    #'- Invalid setting! -'
     
