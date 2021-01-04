@@ -17,6 +17,7 @@ _API_:        str = 'api'
 
 _SCTN_DATA_:  str = 'data'
 _SCTN_MAIN_:  str = 'main'
+_SCTN_ALL_:   str = 'all'  
 
 
 # =========================================================
@@ -375,7 +376,7 @@ def save_settings(ctxGlobals, section, overwrite=False):
         OSError:    If config file already exists.
     """
 
-    if not section.lower() in [_SCTN_DATA_, 'test', 'all']:
+    if not section.lower() in [_SCTN_DATA_, _SCTN_MAIN_, _SCTN_ALL_]:
         raise ValueError("Invalid section '{}'".format(section))
 
     config = ConfigParser(interpolation=ExtendedInterpolation(), allow_no_value=True)
@@ -389,10 +390,10 @@ def save_settings(ctxGlobals, section, overwrite=False):
     else:
         raise OSError("Config file '{}' already exists.\n\nPlease use '--force' flag to overwrite it.".format(ctxGlobals['configFName']))
 
-    if section in ['all', _SCTN_DATA_]:
+    if section in [_SCTN_ALL_, _SCTN_DATA_]:
         config.read_dict(_get_data_settings(ctxGlobals))
 
-    if section in ['all', 'test']:
+    if section in [_SCTN_ALL_, _SCTN_MAIN_]:
         config.read_dict(_get_main_settings(ctxGlobals))
 
     with open(ctxGlobals['configFName'], 'w') as configFile:
@@ -412,12 +413,12 @@ def show_settings(ctxGlobals, section, verify=False):
         OSError:    If unable to read config file.
     """
 
-    if not section.lower() in [_SCTN_DATA_, 'test', 'all']:
+    if not section.lower() in [_SCTN_DATA_, _SCTN_MAIN_, _SCTN_ALL_]:
         raise ValueError("Invalid section '{}'".format(section))
 
     settings = read_settings(ctxGlobals)
 
-    if section in ['all', _SCTN_DATA_]:
+    if section in [_SCTN_ALL_, _SCTN_DATA_]:
         # [data]
         # history = [1-100]                     - default num rec's to retrieve
         # sort = [first|last]                   - retrieve first or last 'count' items
@@ -427,8 +428,8 @@ def show_settings(ctxGlobals, section, verify=False):
         click.echo("Default History:    {}".format(_get_option_val(settings, _SCTN_DATA_, 'history', verify)))
         click.echo("Default Sort:       {}".format(_get_option_val(settings, _SCTN_DATA_, 'sort', verify)))
 
-    if section in ['all', 'test']:
-        click.echo("\n--- [Settings: tests] ---------")
+    if section in [_SCTN_ALL_, _SCTN_MAIN_]:
+        click.echo("\n--- [Settings: main] ----------")
         # [<name of test tool section>]
         # uri = <uri/path to test tool>         - USED AS NEEDED -
         # params = <any test tool params>       - USED AS NEEDED -
