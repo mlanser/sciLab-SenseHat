@@ -283,29 +283,6 @@ def _verify_datastore(settings):
     return '- Data store OK!'
 
 
-def _verify_epaper():
-    reqMods = [
-        'numpy',
-        'waveshare_epd',
-        'PIL',
-        'spidev',
-        'RPi.GPIO',
-    ]
-    availMods = list(sysmods.keys())
-
-    outStr = '- Required modules installed for ePaper display'
-    errStr = ''
-    success = True
-
-    for mod in reqMods:
-        pattern = re.compile("{}\\.*".format(str(mod).replace('.', '\\.')))
-        if not any(pattern.match(line) for line in availMods):
-            success = False
-            errStr += "- '{}' module missing\n".format(mod)
-
-    return outStr if success else errStr
-
-
 # ---------------------------------------------------------
 #                  Manage Data/Settings
 # ---------------------------------------------------------
