@@ -11,7 +11,7 @@ def show_history():
 
 
 # VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-import speedtest
+#import speedtest
 
 import http.client
 from datetime import datetime
