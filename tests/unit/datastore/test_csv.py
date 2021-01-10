@@ -57,7 +57,20 @@ def uneven_row_data_file(tmpdir_factory):
 
 
 @pytest.fixture()
+def binary_data_file(tmpdir_factory):
+    """Create a binary data file."""
+    testDir = tmpdir_factory.mktemp('test')
+    dataFile = testDir.join(uuid.uuid4().hex + '.bin')
+    
+    with open(str(dataFile),'wb') as fp:
+        fp.write(bytes('First line\n2nd line\na third line', encoding="utf-8"))
+    
+    return str(dataFile)
+
+
+@pytest.fixture()
 def empty_data_file(tmpdir_factory):
+    """Create an empty data file."""
     testDir = tmpdir_factory.mktemp('test')
     dataFile = testDir.join(uuid.uuid4().hex + '.csv')
     
@@ -68,6 +81,7 @@ def empty_data_file(tmpdir_factory):
 
 @pytest.fixture()
 def new_data_file(tmpdir_factory):
+    """Only create the filename, but not the actual file."""
     testDir = tmpdir_factory.mktemp('test')
     dataFile = testDir.join(uuid.uuid4().hex + '.csv')
     
@@ -91,7 +105,7 @@ def test__row_counter(even_row_data_file, uneven_row_data_file, new_data_file):
     assert numRows == 4  # NOTE: we start counter at 0 (zero)
 
 
-def test__row_counter_w_bad_info(new_data_file, empty_data_file):
+def test__row_counter_w_bad_params(capsys, binary_data_file, new_data_file, empty_data_file):
     """Test with invalid file pointers, etc."""
 
     # Try blank file with no rows
@@ -101,24 +115,22 @@ def test__row_counter_w_bad_info(new_data_file, empty_data_file):
     exMsg = excinfo.value.args[0]
     assert exMsg == "local variable 'cntr' referenced before assignment"
 
-    #numRows = src.utils.datastore.csv._row_counter(None)
-    #'NoneType' object is not iterable
-
-    #numRows = src.utils.datastore.csv._row_counter([None])
-    #'list' object has no attribute 'seek'
-
-    #with open(even_row_data_file, 'rb') as dataFile:
-    #    numRows = src.utils.datastore.csv._row_counter(dataFile)
-
-    # @TO-DO: test binary file, invalid fp(?), "None", etc. 
-    #with pytest.raises(ValueError) as excinfo:
-    #    dataRow = src.utils.datastore.csv._process_row(_INVALID_DATA_ROW_, dataHdrs['raw'])
-
-    #exMsg = excinfo.value.args[0]
-    #assert exMsg == "could not convert string to float: 'NOT FLOAT'"
+    # Try invalid file pointers
+    with pytest.raises(AttributeError) as excinfo:
+        with open(empty_data_file, 'r', newline='') as dataFile:
+            numRows = src.utils.datastore.csv._row_counter('string')
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "'str' object has no attribute 'seek'"
+    
+    with pytest.raises(TypeError) as excinfo:
+        with open(empty_data_file, 'r', newline='') as dataFile:
+            numRows = src.utils.datastore.csv._row_counter(None)
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "'NoneType' object is not iterable"
 
 
 def test__process_row(capsys, sample_data_fields):
+    """Happy path! Process data rows."""
     dataHdrs = sample_data_fields
     dataRow = src.utils.datastore.csv._process_row(_VALID_DATA_ROW_, dataHdrs['raw'])
     assert len(dataRow) == 5
@@ -126,13 +138,29 @@ def test__process_row(capsys, sample_data_fields):
     dataRow = src.utils.datastore.csv._process_row(_TRUNCATED_DATA_ROW_, dataHdrs['raw'])
     assert len(dataRow) == 4
 
-    with pytest.raises(ValueError) as excinfo:
-        dataRow = src.utils.datastore.csv._process_row(_INVALID_DATA_ROW_, dataHdrs['raw'])
+
+def test__process_row_w_bad_params(capsys, sample_data_fields):
+    """Test with invalid parameters."""
+    dataHdrs = sample_data_fields
+    with pytest.raises(AttributeError) as excinfo:
+        dataRow = src.utils.datastore.csv._process_row('--INVALID--', dataHdrs['raw'])
 
     exMsg = excinfo.value.args[0]
-    assert exMsg == "could not convert string to float: 'NOT FLOAT'"
+    assert exMsg == "'str' object has no attribute 'items'"
 
+    with pytest.raises(TypeError) as excinfo:
+        dataRow = src.utils.datastore.csv._process_row(_VALID_DATA_ROW_, None)
 
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "argument of type 'NoneType' is not iterable"
+
+    with pytest.raises(AttributeError) as excinfo:
+        dataRow = src.utils.datastore.csv._process_row(None, None)
+
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "'NoneType' object has no attribute 'items'"
+
+    
 def test_save_data(capsys, sample_data_fields, valid_sample_data, new_data_file):
     random.seed()
     dataOut = [valid_sample_data for i in range(random.randint(1,10))]
