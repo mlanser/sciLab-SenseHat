@@ -136,23 +136,3 @@ def sample_data_fields():
     """Create list with data field headers."""
     
     return _DATA_FLDS_
-    
-
-@pytest.fixture()
-def valid_sample_data():
-    """Create list with valid sample data."""
-    
-    def _random_string(numChar=5):
-        random.seed()
-        return ''.join(random.choice(string.ascii_letters) for i in range(numChar))
-    
-    random.seed()
-    data = {
-        'strFld1':  _random_string(random.randint(3,7)),    # strFld1
-        'strFld2':  _random_string(random.randint(3,7)),    # strFld2
-        'strFld3':  _random_string(random.randint(3,7)),    # strFld3
-        'floatFld': random.random(),                        # floadFld
-        'intFld':   random.randint(0,100),                  # intFld
-    }
-    
-    return data

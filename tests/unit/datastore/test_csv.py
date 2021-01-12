@@ -4,8 +4,8 @@ import uuid
 import random
 
 import pprint
-
 import pytest
+from inspect import currentframe, getframeinfo
 
 import src.utils.datastore.csv
 
@@ -88,6 +88,49 @@ def new_data_file(tmpdir_factory):
     return str(dataFile)
 
 
+    
+# =========================================================
+#       L I T T L E   H E L P E R   F U N C T I O N S
+# =========================================================
+def valid_sample_data(faker):
+    """Create list with valid sample data."""
+    
+    random.seed()
+    data = {
+        'strFld1':  faker.word(),           # strFld1
+        'strFld2':  faker.word(),           # strFld2
+        'strFld3':  faker.word(),           # strFld3
+        'floatFld': random.random(),        # floadFld
+        'intFld':   random.randint(0,100),  # intFld
+    }
+    
+    return data
+  
+  
+def invalid_sample_data(faker):
+    """Create list with invalid sample data."""
+    
+    random.seed()
+    data = {
+        'strFld1':  faker.word(),           # strFld1
+        'strFld2':  faker.word(),           # strFld2
+        'strFld3':  faker.word(),           # strFld3
+        'floatFld': faker.word(),           # floadFld -- data not float
+        'intFld':   faker.word(),           # intFld   -- data not int
+    }
+    
+    return data
+  
+  
+def pp(capsys, data, frameInfo=None):  
+    with capsys.disabled():
+        _PP_ = pprint.PrettyPrinter(indent=4)
+        print('\n')
+        if frameInfo is not None:
+            print('LINE #: {}\n'.format(frameInfo.lineno))
+        _PP_.pprint(data)
+
+    
 # =========================================================
 #                T E S T   F U N C T I O N S
 # =========================================================
@@ -105,7 +148,7 @@ def test__row_counter(even_row_data_file, uneven_row_data_file, new_data_file):
     assert numRows == 4  # NOTE: we start counter at 0 (zero)
 
 
-def test__row_counter_w_bad_params(capsys, binary_data_file, new_data_file, empty_data_file):
+def test__row_counter_w_bad_params(binary_data_file, new_data_file, empty_data_file):
     """Test with invalid file pointers, etc."""
 
     # Try blank file with no rows
@@ -129,7 +172,7 @@ def test__row_counter_w_bad_params(capsys, binary_data_file, new_data_file, empt
     assert exMsg == "'NoneType' object is not iterable"
 
 
-def test__process_row(capsys, sample_data_fields):
+def test__process_row(sample_data_fields):
     """Happy path! Process data rows."""
     dataHdrs = sample_data_fields
     dataRow = src.utils.datastore.csv._process_row(_VALID_DATA_ROW_, dataHdrs['raw'])
@@ -139,7 +182,7 @@ def test__process_row(capsys, sample_data_fields):
     assert len(dataRow) == 4
 
 
-def test__process_row_w_bad_params(capsys, sample_data_fields):
+def test__process_row_w_bad_params(sample_data_fields):
     """Test with invalid parameters."""
     dataHdrs = sample_data_fields
     with pytest.raises(AttributeError) as excinfo:
@@ -161,9 +204,10 @@ def test__process_row_w_bad_params(capsys, sample_data_fields):
     assert exMsg == "'NoneType' object has no attribute 'items'"
 
     
-def test_save_data(capsys, sample_data_fields, valid_sample_data, new_data_file):
+def test_save_data(faker, sample_data_fields, new_data_file):
+    """Happy path! Save data to file."""
     random.seed()
-    dataOut = [valid_sample_data for i in range(random.randint(1,10))]
+    dataOut = [valid_sample_data(faker) for i in range(random.randint(1,10))]
     dataHdrs = sample_data_fields['csv']
     dataFName = new_data_file
 
@@ -183,7 +227,31 @@ def test_save_data(capsys, sample_data_fields, valid_sample_data, new_data_file)
     assert len(dataIn) == len(dataOut)
 
     
-def test_get_data(capsys, sample_data_fields, new_data_file):
+def test_save_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
+    """Test with invalid parameters."""
+    random.seed()
+    dataOut = [invalid_sample_data(faker) for i in range(random.randint(1,10))]
+    dataHdrs = sample_data_fields['csv']
+    dataFName = new_data_file
+
+    pp(capsys, dataOut, getframeinfo(currentframe()))
+    #src.utils.datastore.csv.save_data(dataOut, dataFName, dataHdrs, True)
+
+    #dataIn = []
+    #dataHdrs = sample_data_fields['raw']
+    #with open(dataFName, 'r', newline='') as dataFile:
+    #    dataReader = csv.DictReader(dataFile, dataHdrs.keys())
+
+    #    for i, row in enumerate(dataReader, 0):
+    #        if i < 1:       # Skip first line which holds header names
+    #            continue;
+    #        else:    
+    #            dataIn.append(src.utils.datastore.csv._process_row(row, dataHdrs))
+
+    #assert len(dataIn) == len(dataOut)
+
+    
+def test_get_data(capsys, faker, sample_data_fields, new_data_file):
     dataFName = new_data_file
 
     with open(dataFName, 'a+', newline='') as dataFile:
@@ -194,10 +262,33 @@ def test_get_data(capsys, sample_data_fields, new_data_file):
     dataIn = src.utils.datastore.csv.get_data(dataFName, _HDR_FLDS_RAW_, 1, True)
 
     assert len(dataIn[0]) == len(_VALID_DATA_ROW_)
+    pp(capsys, dataIn, getframeinfo(currentframe()))
+    
     #with capsys.disabled():
     #    _PP_ = pprint.PrettyPrinter(indent=4)
     #    print('\n')
     #    _PP_.pprint(_VALID_DATA_ROW_)
     #    _PP_.pprint(dataIn)
     #    #_PP_.pprint(dataFile)
-        
+
+    
+def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
+    dataFName = new_data_file
+
+    with open(dataFName, 'a+', newline='') as dataFile:
+        dataWriter = csv.DictWriter(dataFile, _HDR_FLDS_CSV_.keys(), extrasaction='ignore')
+        dataWriter.writeheader()
+        dataWriter.writerow(_VALID_DATA_ROW_)
+    
+    dataIn = src.utils.datastore.csv.get_data(dataFName, _HDR_FLDS_RAW_, 1, True)
+
+    assert len(dataIn[0]) == len(_VALID_DATA_ROW_)
+    pp(capsys, dataIn, getframeinfo(currentframe()))
+    
+    #with capsys.disabled():
+    #    _PP_ = pprint.PrettyPrinter(indent=4)
+    #    print('\n')
+    #    _PP_.pprint(_VALID_DATA_ROW_)
+    #    _PP_.pprint(dataIn)
+    #    #_PP_.pprint(dataFile)
+            
