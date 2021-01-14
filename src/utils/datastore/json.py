@@ -1,9 +1,6 @@
 import os
 import json
 
-#import pprint
-#_PP_ = pprint.PrettyPrinter(indent=4)
-
 
 # =========================================================
 #             G E N E R I C   F U N C T I O N S
@@ -12,8 +9,15 @@ def _process_data(dataIn, fldNames):
     dataOut = []
 
     for row in dataIn:
-        # Filter each row to only hold approved keys using dictionary comprehension
-        dataOut.append({key: row[key] for key in fldNames})
+        # We can't filter data to only hold approved keys using only 
+        # dictionary comprehension, as it's possible that not every 
+        # row has all valid/reqiured field names
+        rowOut = {}
+        for key, val in row.items():
+            if key in fldNames:
+                rowOut.update({key : fldNames[key](val)})
+            
+        dataOut.append(rowOut)
 
     return dataOut
 
@@ -23,8 +27,8 @@ def _read_json(dbFName):
         dbFile = open(dbFName, "r")
         data = json.load(dbFile)
         
-    except json.JSONDecodeError:    # We'll just 'overwrite' the file
-        return None                 # if it's empty or if we can't read it.
+    except json.JSONDecodeError as e:
+        raise OSError("Failed to read data from '{}'!\n{}".format(dbFName, e))
 
     else:
         dbFile.close()
@@ -74,6 +78,11 @@ def save_data(data, dbFName, dbFlds, force=True):
             
     try:
         oldData = _read_json(dbFName) if os.path.exists(dbFName) else None
+        
+    except OSError:             # We'll just 'overwrite' the file
+        oldData = None          # if it's empty or if we can't read it.
+        
+    try:    
         newData = _process_data(data, dbFlds.keys())
 
         _write_json(dbFName, newData if oldData is None else oldData + newData)

@@ -20,17 +20,17 @@ _TRUNCATED_DATA_ROW_ = {'strFld1': 'val1', 'strFld2': 'val2', 'floatFld': 4.0, '
 _INVALID_DATA_ROW_ = {'strFld1': 'val1', 'fruit': 'banana', 'strFld3': 'val3', 'floatFld': 'NOT FLOAT', 'intFld': 5}
 
 _EVEN_DATA_4xROWS_5xFLDS = """\
-r1Val1,r1Val2,r1Val3,4.0,5,
-r2Val1,r2Val2,r2Val3,4.0,5,
-r3Val1,r3Val2,r3Val3,4.0,5,
-r4Val1,r4Val2,r4Val3,4.0,5,
+r1Val1,r1Val2,r1Val3,1.1,10,
+r2Val1,r2Val2,r2Val3,2.2,20,
+r3Val1,r3Val2,r3Val3,3.3,30,
+r4Val1,r4Val2,r4Val3,4.4,40,
 """
 
 _UNEVEN_DATA_5xROWS_NxFLDS = """\
-r1Val1,r1Val2,4.0,5,
-r2Val1,r2Val2,r2Val3,4.0,
+r1Val1,r1Val2,1.1,10,
+r2Val1,r2Val2,r2Val3,2.2,
 r3Val1,r3Val2,
-r4Val1,r4Val2,r4Val3,4.0,5,r4Val6,r4Val7
+r4Val1,r4Val2,r4Val3,4.4,40,r4Val6,r4Val7
 r5Val1,
 """
 
@@ -122,12 +122,12 @@ def invalid_sample_data(faker):
     return data
   
   
-def pp(capsys, data, frameInfo=None):  
+def pp(capsys, data, frame=None):  
     with capsys.disabled():
         _PP_ = pprint.PrettyPrinter(indent=4)
         print('\n')
-        if frameInfo is not None:
-            print('LINE #: {}\n'.format(frameInfo.lineno))
+        if frame is not None:
+            print('LINE #: {}\n'.format(getframeinfo(frame).lineno))
         _PP_.pprint(data)
 
     
@@ -187,19 +187,16 @@ def test__process_row_w_bad_params(sample_data_fields):
     dataHdrs = sample_data_fields
     with pytest.raises(AttributeError) as excinfo:
         dataRow = src.utils.datastore.csv._process_row('--INVALID--', dataHdrs['raw'])
-
     exMsg = excinfo.value.args[0]
     assert exMsg == "'str' object has no attribute 'items'"
 
     with pytest.raises(TypeError) as excinfo:
         dataRow = src.utils.datastore.csv._process_row(_VALID_DATA_ROW_, None)
-
     exMsg = excinfo.value.args[0]
     assert exMsg == "argument of type 'NoneType' is not iterable"
 
     with pytest.raises(AttributeError) as excinfo:
         dataRow = src.utils.datastore.csv._process_row(None, None)
-
     exMsg = excinfo.value.args[0]
     assert exMsg == "'NoneType' object has no attribute 'items'"
 
@@ -227,31 +224,35 @@ def test_save_data(faker, sample_data_fields, new_data_file):
     assert len(dataIn) == len(dataOut)
 
     
-def test_save_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
+def test_save_data_w_bad_params(faker, sample_data_fields, empty_data_file, new_data_file):
     """Test with invalid parameters."""
     random.seed()
     dataOut = [invalid_sample_data(faker) for i in range(random.randint(1,10))]
     dataHdrs = sample_data_fields['csv']
     dataFName = new_data_file
+    existFName = empty_data_file
 
-    pp(capsys, dataOut, getframeinfo(currentframe()))
-    #src.utils.datastore.csv.save_data(dataOut, dataFName, dataHdrs, True)
+    # Test writing to non-existant file with incorrect 'force' flag
+    with pytest.raises(TypeError) as excinfo:
+        src.utils.datastore.csv.save_data(dataOut, None, dataHdrs, False)
+    exMsg = excinfo.value.args[0]
+    assert 'path should be string, bytes, os.PathLike or integer' in exMsg
 
-    #dataIn = []
-    #dataHdrs = sample_data_fields['raw']
-    #with open(dataFName, 'r', newline='') as dataFile:
-    #    dataReader = csv.DictReader(dataFile, dataHdrs.keys())
+    # Test writing to non-existant file with incorrect 'force' flag
+    with pytest.raises(OSError) as excinfo:
+        src.utils.datastore.csv.save_data(dataOut, dataFName, dataHdrs, False)
+    exMsg = excinfo.value.args[0]
+    assert 'does not exist!' in exMsg
 
-    #    for i, row in enumerate(dataReader, 0):
-    #        if i < 1:       # Skip first line which holds header names
-    #            continue;
-    #        else:    
-    #            dataIn.append(src.utils.datastore.csv._process_row(row, dataHdrs))
-
-    #assert len(dataIn) == len(dataOut)
-
+    # Test bad data headers   
+    with pytest.raises(AttributeError) as excinfo:
+        src.utils.datastore.csv.save_data(dataOut, dataFName, None, True)
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "'NoneType' object has no attribute 'keys'"
     
-def test_get_data(capsys, faker, sample_data_fields, new_data_file):
+    
+def test_get_data(faker, sample_data_fields, new_data_file):
+    """Happy path! Save data to file."""
     dataFName = new_data_file
 
     with open(dataFName, 'a+', newline='') as dataFile:
@@ -262,33 +263,28 @@ def test_get_data(capsys, faker, sample_data_fields, new_data_file):
     dataIn = src.utils.datastore.csv.get_data(dataFName, _HDR_FLDS_RAW_, 1, True)
 
     assert len(dataIn[0]) == len(_VALID_DATA_ROW_)
-    pp(capsys, dataIn, getframeinfo(currentframe()))
+    assert dataIn[0] == _VALID_DATA_ROW_
     
-    #with capsys.disabled():
-    #    _PP_ = pprint.PrettyPrinter(indent=4)
-    #    print('\n')
-    #    _PP_.pprint(_VALID_DATA_ROW_)
-    #    _PP_.pprint(dataIn)
-    #    #_PP_.pprint(dataFile)
-
     
-def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
+def test_get_data_w_bad_params(faker, sample_data_fields, new_data_file):
     dataFName = new_data_file
 
+    # Test reading from non-existant file
+    with pytest.raises(OSError) as excinfo:
+        dataIn = src.utils.datastore.csv.get_data('_DOES_NOT_EXIST_.CSV.', _HDR_FLDS_RAW_, 1, True)
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "Data file '_DOES_NOT_EXIST_.CSV.' does not exist!"
+    
+    # Test reading zero lines (will read at least 1 line) ...
     with open(dataFName, 'a+', newline='') as dataFile:
         dataWriter = csv.DictWriter(dataFile, _HDR_FLDS_CSV_.keys(), extrasaction='ignore')
         dataWriter.writeheader()
         dataWriter.writerow(_VALID_DATA_ROW_)
-    
-    dataIn = src.utils.datastore.csv.get_data(dataFName, _HDR_FLDS_RAW_, 1, True)
 
+    dataIn = src.utils.datastore.csv.get_data(dataFName, _HDR_FLDS_RAW_, 0, True)
     assert len(dataIn[0]) == len(_VALID_DATA_ROW_)
-    pp(capsys, dataIn, getframeinfo(currentframe()))
     
-    #with capsys.disabled():
-    #    _PP_ = pprint.PrettyPrinter(indent=4)
-    #    print('\n')
-    #    _PP_.pprint(_VALID_DATA_ROW_)
-    #    _PP_.pprint(dataIn)
-    #    #_PP_.pprint(dataFile)
-            
+    # ... and try to read too many lines (will read 1 line in this case)
+    dataIn = src.utils.datastore.csv.get_data(dataFName, _HDR_FLDS_RAW_, 999, True)
+    assert len(dataIn[0]) == len(_VALID_DATA_ROW_)
+    

@@ -81,6 +81,10 @@ def get_data(dbFName, dbFlds, numRecs=1, first=True):
         OSError: If unable to access or read data from CSV file.
     """
 
+    if not os.path.exists(dbFName):
+        raise OSError("Data file '{}' does not exist!".format(dbFName))
+      
+    numRecs = max(1, numRecs)  
     data = []
     with open(dbFName, 'r', newline='') as dbFile:
         lastRec = numRecs if first else _row_counter(dbFile)
