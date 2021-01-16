@@ -5,17 +5,17 @@ import json
 # =========================================================
 #             G E N E R I C   F U N C T I O N S
 # =========================================================
-def _process_data(dataIn, fldNames):
+def _process_data(dataIn, flds):
     dataOut = []
 
     for row in dataIn:
         # We can't filter data to only hold approved keys using only 
         # dictionary comprehension, as it's possible that not every 
-        # row has all valid/reqiured field names
+        # row has all valid/required field names
         rowOut = {}
         for key, val in row.items():
-            if key in fldNames:
-                rowOut.update({key : fldNames[key](val)})
+            if key in flds:
+                rowOut.update({key : flds[key](val)})
             
         dataOut.append(rowOut)
 
@@ -82,9 +82,8 @@ def save_data(data, dbFName, dbFlds, force=True):
     except OSError:             # We'll just 'overwrite' the file
         oldData = None          # if it's empty or if we can't read it.
         
-    try:    
-        newData = _process_data(data, dbFlds.keys())
-
+    try:
+        newData = _process_data(data, dbFlds)
         _write_json(dbFName, newData if oldData is None else oldData + newData)
 
     except OSError as e:
@@ -115,7 +114,7 @@ def get_data(dbFName, dbFlds, numRecs=1, first=True):
         else:
             lastRec = numRecs if first else len(jsonData)
             firstRec = 0 if first else max(0, lastRec - numRecs)
-            data = _process_data(jsonData[firstRec:lastRec], dbFlds.keys())
+            data = _process_data(jsonData[firstRec:lastRec], dbFlds)
 
     except OSError as e:
         raise OSError("Failed to read data from '{}'!\n{}".format(dbFName, e))
