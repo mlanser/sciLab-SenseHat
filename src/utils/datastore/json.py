@@ -8,16 +8,13 @@ import json
 def _process_data(dataIn, flds):
     dataOut = []
 
+    # Filter each row to only hold approved keys using dictionary
+    # comprehension and, of course, a common set of keys ;-)
     for row in dataIn:
-        # We can't filter data to only hold approved keys using only 
-        # dictionary comprehension, as it's possible that not every 
-        # row has all valid/required field names
-        rowOut = {}
-        for key, val in row.items():
-            if key in flds:
-                rowOut.update({key : flds[key](val)})
-            
-        dataOut.append(rowOut)
+        commonFlds = list(set(row.keys()) & set(flds))
+        
+        if len(commonFlds) > 0:
+            dataOut.append({key: row[key] for key in commonFlds})
 
     return dataOut
 

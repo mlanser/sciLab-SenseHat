@@ -153,3 +153,14 @@ def test_show_settings_sctn_MAIN_w_verify(capsys, valid_config_ini, invalid_conf
     #assert _HDR_DATA_ in out
     #'- Invalid setting! -'
     
+    
+    
+if False:    
+  pp(capsys, data, currentframe())
+  pp(capsys, dataHdrs['sql'], currentframe())
+  pp(capsys, dataHdrs['raw'], currentframe())
+  pp(capsys, dataFName, currentframe())
+  pp(capsys, tblName, currentframe())
+  pp(capsys, dataOut, currentframe())
+  pp(capsys, dataIn, currentframe())
+

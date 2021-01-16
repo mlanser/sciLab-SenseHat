@@ -128,6 +128,33 @@ def test_save_data(capsys, faker, sample_data_fields, new_data_file):
     assert tableExists
     
 
+def test_save_data_w_bad_params(capsys, faker, sample_data_fields, empty_data_file, new_data_file):
+    """Test with invalid parameters."""
+    random.seed()
+    dataOut = [invalid_sample_data(faker) for i in range(random.randint(1,10))]
+    dataHdrs = sample_data_fields
+    dataFName = new_data_file
+    tblName = '_TEST_TABLE_'
+
+    # Test writing to 'None' as filename
+    with pytest.raises(TypeError) as excinfo:
+        src.utils.datastore.sqlite.save_data(dataOut, None, dataHdrs['sql'], tblName, False)
+    exMsg = excinfo.value.args[0]
+    assert 'path should be string, bytes, os.PathLike or integer' in exMsg
+
+    # Test writing to non-existant file with incorrect 'force' flag
+    with pytest.raises(OSError) as excinfo:
+        src.utils.datastore.sqlite.save_data(dataOut, '--INVALID--', dataHdrs['sql'], tblName, False)
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "SQLite data file '--INVALID--' does not exist!"
+
+    # Test bad data headers   
+    with pytest.raises(AttributeError) as excinfo:
+        src.utils.datastore.sqlite.save_data(dataOut, dataFName, None, tblName, True)
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "'NoneType' object has no attribute 'items'"
+    
+    
 def test_get_data(capsys, faker, sample_data_fields, new_data_file):
     """Happy path! Get data from databse."""
     random.seed()
@@ -138,7 +165,7 @@ def test_get_data(capsys, faker, sample_data_fields, new_data_file):
     tblName = '_TEST_TABLE_'
 
     src.utils.datastore.sqlite.save_data(dataOut, dataFName, dataHdrs['sql'], tblName, True)
-    dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['raw'], tblName, None, numRecs)
+    dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['sql'], tblName, None, numRecs)
 
     assert len(dataIn) == len(dataOut)
     assert len(dataIn[0]) == len(dataOut[0])
@@ -149,159 +176,38 @@ def test_get_data(capsys, faker, sample_data_fields, new_data_file):
             allExist = False
     assert allExist
 
-    dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['raw'], tblName, None, 0)
+    dataIn = src.utils.datastore.sqlite.get_data(dataFName, _HDR_FLDS_RAW_, tblName, None, 0)
     assert len(dataIn) == 0
 
-    dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['raw'], tblName, None, 999)
+    dataIn = src.utils.datastore.sqlite.get_data(dataFName, _HDR_FLDS_RAW_, tblName, None, 999)
     assert len(dataIn) == numRecs
 
 
-if False:    
-  pp(capsys, data, currentframe())
-  pp(capsys, dataHdrs['sql'], currentframe())
-  pp(capsys, dataHdrs['raw'], currentframe())
-  pp(capsys, dataFName, currentframe())
-  pp(capsys, tblName, currentframe())
-  pp(capsys, dataOut, currentframe())
-  pp(capsys, dataIn, currentframe())
+def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
+    """Test with invalid parameters."""
+    random.seed()
+    numRecs = random.randint(1,10)
+    dataOut = [invalid_sample_data(faker) for i in range(numRecs)]
+    dataHdrs = sample_data_fields
+    dataFName = new_data_file
+    tblName = '_TEST_TABLE_'
 
-  def test__process_data(faker, sample_data_fields):
-      """Happy path! Process data rows."""
-      random.seed()
-      dataHdrs = sample_data_fields
-      dataIn = [valid_sample_data(faker) for i in range(random.randint(1,10))]
-      dataOut = src.utils.datastore.json._process_data(dataIn, dataHdrs['raw'])
-      assert len(dataOut[0]) == 5
+    src.utils.datastore.sqlite.save_data(dataOut, dataFName, dataHdrs['sql'], tblName, True)
+    
+    # Test reading from non-existant file
+    with pytest.raises(OSError) as excinfo:
+        dataIn = src.utils.datastore.sqlite.get_data('DOES_NOT_EXIST.sqlite', dataHdrs['sql'], tblName, None, numRecs)
+    exMsg = excinfo.value.args[0]
+    assert exMsg == "SQLite data file 'DOES_NOT_EXIST.sqlite' does not exist!"
 
-      dataIn = [_TRUNCATED_DATA_ROW_]
-      dataOut = src.utils.datastore.json._process_data([_TRUNCATED_DATA_ROW_], dataHdrs['raw'])
-      assert len(dataOut[0]) == 4
-
-
-  def test__process_data_w_bad_params(sample_data_fields):
-      """Test with invalid parameters."""
-      dataHdrs = sample_data_fields
-      with pytest.raises(AttributeError) as excinfo:
-          dataOut = src.utils.datastore.json._process_data('--INVALID--', dataHdrs['raw'])
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "'str' object has no attribute 'items'"
-
-      with pytest.raises(TypeError) as excinfo:
-          dataOut = src.utils.datastore.json._process_data([_VALID_DATA_ROW_], None)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "argument of type 'NoneType' is not iterable"
-
-      with pytest.raises(AttributeError) as excinfo:
-          dataOut = src.utils.datastore.json._process_data([None], None)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "'NoneType' object has no attribute 'items'"
-
-
-  def test__read_json(even_row_data_file, uneven_row_data_file):
-      """Happy path! Read JSON file."""
-      dataFName = even_row_data_file
-      data = src.utils.datastore.json._read_json(dataFName)
-      assert len(data) == 4
-
-      dataFName = uneven_row_data_file
-      data = src.utils.datastore.json._read_json(dataFName)
-      assert len(data) == 4
-
-
-  def test__read_json_w_bad_params(binary_data_file, empty_data_file, new_data_file):
-      """Test with invalid parameters."""
-      with pytest.raises(FileNotFoundError) as excinfo:
-          data = src.utils.datastore.json._read_json('--INVALID--')
-      exMsg = excinfo.value.args[0]
-      assert exMsg == 2
-
-      with pytest.raises(TypeError) as excinfo:
-          data = src.utils.datastore.json._read_json(None)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "expected str, bytes or os.PathLike object, not NoneType"
-
-      dataFName = new_data_file
-      with pytest.raises(FileNotFoundError) as excinfo:
-          data = src.utils.datastore.json._read_json(dataFName)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == 2
-
-      dataFName = empty_data_file
-      with pytest.raises(OSError) as excinfo:
-          data = src.utils.datastore.json._read_json(dataFName)
-      exMsg = excinfo.value.args[0]
-      assert "Failed to read data from" in exMsg
-
-      dataFName = binary_data_file
-      with pytest.raises(OSError) as excinfo:
-          data = src.utils.datastore.json._read_json(dataFName)
-      exMsg = excinfo.value.args[0]
-      assert "Failed to read data from" in exMsg
-
-
-  def test__write_json(new_data_file):
-      """Happy path! Write JSON file."""
-      dataFName = new_data_file
-      src.utils.datastore.json._write_json(dataFName, _EVEN_DATA_4xROWS_5xFLDS)
-      data = src.utils.datastore.json._read_json(dataFName)
-      assert len(data) == 4
-
-      dataFName = new_data_file
-      src.utils.datastore.json._write_json(dataFName, _UNEVEN_DATA_5xROWS_NxFLDS)
-      data = src.utils.datastore.json._read_json(dataFName)
-      assert len(data) == 4
-
-
-  def test__write_json_w_bad_params(new_data_file):
-      """Test with invalid parameters."""
-      with pytest.raises(TypeError) as excinfo:
-          src.utils.datastore.json._write_json(None, _EVEN_DATA_4xROWS_5xFLDS)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "expected str, bytes or os.PathLike object, not NoneType"
-
-
-  def test_save_data_w_bad_params(faker, sample_data_fields, empty_data_file, new_data_file):
-      """Test with invalid parameters."""
-      random.seed()
-      dataOut = [invalid_sample_data(faker) for i in range(random.randint(1,10))]
-      dataHdrs = sample_data_fields
-      dataFName = new_data_file
-      existFName = empty_data_file
-
-      # Test writing to 'None' as filename
-      with pytest.raises(TypeError) as excinfo:
-          src.utils.datastore.json.save_data(dataOut, None, dataHdrs['json'])
-      exMsg = excinfo.value.args[0]
-      assert 'path should be string, bytes, os.PathLike or integer' in exMsg
-
-      # Test writing to non-existant file with incorrect 'force' flag
-      with pytest.raises(OSError) as excinfo:
-          src.utils.datastore.json.save_data(dataOut, '--INVALID--', dataHdrs['raw'], False)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "JSON data file '--INVALID--' does not exist!"
-
-      # Test bad data headers   
-      with pytest.raises(TypeError) as excinfo:
-          src.utils.datastore.json.save_data(dataOut, dataFName, None, True)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "argument of type 'NoneType' is not iterable"
-
-
-  def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
-      numRecs = random.randint(1,10)
-      dataOut = [invalid_sample_data(faker) for i in range(numRecs)]
-      dataHdrs = sample_data_fields
-      dataFName = new_data_file
-
-      # Test reading from non-existant file
-      dataIn = src.utils.datastore.json.get_data('_DOES_NOT_EXIST_.JSON.', _HDR_FLDS_RAW_, 1, True)
-      assert dataIn == []
-
-      # Test invalid heafers/field names
-      with open(dataFName, 'w') as dataFile:
-          json.dump([_VALID_DATA_ROW_], dataFile)
-
-      with pytest.raises(TypeError) as excinfo:
-          dataIn = src.utils.datastore.json.get_data(dataFName, None, 1, True)
-      exMsg = excinfo.value.args[0]
-      assert exMsg == "argument of type 'NoneType' is not iterable"
+    # Test invalid table name
+    with pytest.raises(OSError) as excinfo:
+        dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['sql'], 'INVALID_TABLE', None, numRecs)
+    exMsg = excinfo.value.args[0]
+    assert "Failed to retrieve data from SQLite database" in exMsg
+    
+    # Test invalid headers/field names
+    with pytest.raises(OSError) as excinfo:
+        dataIn = src.utils.datastore.sqlite.get_data(dataFName, {'foo':'bar'}, tblName, None, numRecs)
+    exMsg = excinfo.value.args[0]
+    assert "Failed to retrieve data from SQLite database" in exMsg

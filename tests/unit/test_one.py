@@ -37,3 +37,14 @@ def test_replace():
     t_expected = Task('finish book', 'brian', True, 10)
     assert t_after == t_expected
     
+    
+    
+if False:    
+  pp(capsys, data, currentframe())
+  pp(capsys, dataHdrs['sql'], currentframe())
+  pp(capsys, dataHdrs['raw'], currentframe())
+  pp(capsys, dataFName, currentframe())
+  pp(capsys, tblName, currentframe())
+  pp(capsys, dataOut, currentframe())
+  pp(capsys, dataIn, currentframe())
+

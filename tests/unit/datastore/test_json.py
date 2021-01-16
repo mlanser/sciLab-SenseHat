@@ -155,17 +155,17 @@ def test__process_data_w_bad_params(sample_data_fields):
     with pytest.raises(AttributeError) as excinfo:
         dataOut = src.utils.datastore.json._process_data('--INVALID--', dataHdrs['raw'])
     exMsg = excinfo.value.args[0]
-    assert exMsg == "'str' object has no attribute 'items'"
+    assert exMsg == "'str' object has no attribute 'keys'"
 
     with pytest.raises(TypeError) as excinfo:
         dataOut = src.utils.datastore.json._process_data([_VALID_DATA_ROW_], None)
     exMsg = excinfo.value.args[0]
-    assert exMsg == "argument of type 'NoneType' is not iterable"
+    assert exMsg == "'NoneType' object is not iterable"
 
     with pytest.raises(AttributeError) as excinfo:
         dataOut = src.utils.datastore.json._process_data([None], None)
     exMsg = excinfo.value.args[0]
-    assert exMsg == "'NoneType' object has no attribute 'items'"
+    assert exMsg == "'NoneType' object has no attribute 'keys'"
 
 
 def test__read_json(even_row_data_file, uneven_row_data_file):
@@ -231,7 +231,7 @@ def test__write_json_w_bad_params(new_data_file):
     assert exMsg == "expected str, bytes or os.PathLike object, not NoneType"
     
     
-def test_save_data(faker, sample_data_fields, new_data_file):
+def test_save_data(capsys, faker, sample_data_fields, new_data_file):
     """Happy path! Save data to JSON file."""
     random.seed()
     dataOut = [valid_sample_data(faker) for i in range(random.randint(1,10))]
@@ -247,7 +247,7 @@ def test_save_data(faker, sample_data_fields, new_data_file):
     assert dataIn == dataOut
 
 
-def test_save_data_w_bad_params(faker, sample_data_fields, empty_data_file, new_data_file):
+def test_save_data_w_bad_params(capsys, faker, sample_data_fields, empty_data_file, new_data_file):
     """Test with invalid parameters."""
     random.seed()
     dataOut = [invalid_sample_data(faker) for i in range(random.randint(1,10))]
@@ -271,7 +271,7 @@ def test_save_data_w_bad_params(faker, sample_data_fields, empty_data_file, new_
     with pytest.raises(TypeError) as excinfo:
         src.utils.datastore.json.save_data(dataOut, dataFName, None, True)
     exMsg = excinfo.value.args[0]
-    assert exMsg == "argument of type 'NoneType' is not iterable"
+    assert exMsg == "'NoneType' object is not iterable"
 
 
 def test_get_data(capsys, faker, sample_data_fields, new_data_file):
@@ -310,11 +310,11 @@ def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file)
     dataIn = src.utils.datastore.json.get_data('_DOES_NOT_EXIST_.JSON.', _HDR_FLDS_RAW_, 1, True)
     assert dataIn == []
 
-    # Test invalid heafers/field names
+    # Test invalid headers/field names
     with open(dataFName, 'w') as dataFile:
         json.dump([_VALID_DATA_ROW_], dataFile)
 
     with pytest.raises(TypeError) as excinfo:
         dataIn = src.utils.datastore.json.get_data(dataFName, None, 1, True)
     exMsg = excinfo.value.args[0]
-    assert exMsg == "argument of type 'NoneType' is not iterable"
+    assert exMsg == "'NoneType' object is not iterable"

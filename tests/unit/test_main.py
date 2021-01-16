@@ -18,3 +18,17 @@ def test_action_two_w_2_args():
     expected = src.main.action_two(2, 3)
     assert 5 == expected
     
+    
+    
+    
+if False:    
+  pp(capsys, data, currentframe())
+  pp(capsys, dataHdrs['sql'], currentframe())
+  pp(capsys, dataHdrs['raw'], currentframe())
+  pp(capsys, dataFName, currentframe())
+  pp(capsys, tblName, currentframe())
+  pp(capsys, dataOut, currentframe())
+  pp(capsys, dataIn, currentframe())
+
+    
+    

@@ -111,14 +111,19 @@ def save_data(data, dbFName, tblFlds, tblName, force=True):
     if not _exist_table(dbCur, tblName):
         _create_table(dbCur, tblName, tblFlds)
     
+    # Filter each row to only hold approved keys using dictionary
+    # comprehension and, of course, a common set of keys ;-)
     fldNames = tblFlds.keys()
-    flds = ','.join(fldNames)
-    vals = ','.join("?" for (_) in fldNames)
     for row in data:
-        # Using list comprehension to only pull values 
-        # that we want/need from a row of data
-        dbCur.execute("INSERT INTO {}({}) VALUES({})".format(tblName, flds, vals),
-                      [row[key] for key in fldNames])
+        commonFlds = list(set(row.keys()) & set(fldNames))
+        
+        if len(commonFlds) > 0:
+            flds = ','.join(commonFlds)
+            vals = ','.join("?" for (_) in commonFlds)
+            # Using list comprehension to only pull values 
+            # that we want/need from a row of data
+            dbCur.execute("INSERT INTO {}({}) VALUES({})".format(tblName, flds, vals),
+                          [row[key] for key in commonFlds])
 
     dbConn.commit()
     dbConn.close()
@@ -136,38 +141,43 @@ def get_data(dbFName, tblFlds, tblName, orderBy=None, numRecs=1, first=True):
         tblName:  DB table name
         orderBy:  Field to sorted by
         numRecs:  Number of records to retrieve
-        first:    If TRUE, rerieve first 'numRec' records, else retrieve last 'numRec' records.
+        first:    If TRUE, retrieve first 'numRec' records, else retrieve last 'numRec' records.
 
     Returns:
         list:     List of all records retrieved
     """
 
-    dbConn = _connect_server(dbFName)
+    dbConn = _connect_server(dbFName, False)
     dbCur = dbConn.cursor()
     
     fldNames = tblFlds.keys()
     flds = ','.join("{!s}".format(key) for key in fldNames)
     sortFld = list(fldNames)[0] if orderBy is None else orderBy
         
-    if first:
-        dbCur.execute('SELECT {flds} FROM {tbl} {order} LIMIT {limit}'.format(
-            flds=flds,
-            tbl=tblName,
-            order=_create_orderby_param(sortFld),
-            limit=numRecs
-        ))
-    else:    
-        dbCur.execute('SELECT * FROM (SELECT {flds} FROM {tbl} {inner} LIMIT {limit}) {order}'.format(
-            flds=flds,
-            tbl=tblName,
-            inner=_create_orderby_param(sortFld, True),
-            limit=numRecs,
-            order=_create_orderby_param(sortFld)
-        ))
-    
-    dataRecords = dbCur.fetchall()
-    dbConn.close()
+    try:  
+      if first:
+          dbCur.execute('SELECT {flds} FROM {tbl} {order} LIMIT {limit}'.format(
+              flds=flds,
+              tbl=tblName,
+              order=_create_orderby_param(sortFld),
+              limit=numRecs
+          ))
+      else:    
+          dbCur.execute('SELECT * FROM (SELECT {flds} FROM {tbl} {inner} LIMIT {limit}) {order}'.format(
+              flds=flds,
+              tbl=tblName,
+              inner=_create_orderby_param(sortFld, True),
+              limit=numRecs,
+              order=_create_orderby_param(sortFld)
+          ))
 
+      dataRecords = dbCur.fetchall()
+
+    except sqlite3.Error as e:
+        raise OSError("Failed to retrieve data from SQLite database '{}'\n{}!".format(dbFName, e))
+        
+    dbConn.close()
+      
     data = []
     for row in dataRecords:
         # Create dictionary with keys from field name 
