@@ -34,30 +34,6 @@ _UNEVEN_DATA_5xROWS_NxFLDS = [
 ]
 
 
-@pytest.fixture(scope='module')
-def even_row_data_file(tmpdir_factory):
-    """Create JSON data file with even rows (i.e. every row has same number of fields)."""
-    testDir = tmpdir_factory.mktemp('test')
-    dataFile = testDir.join('even_row.json')
-    
-    with open(dataFile, "w") as dbFile:
-        json.dump(_EVEN_DATA_4xROWS_5xFLDS, dbFile)
-        
-    return str(dataFile)
-
-  
-@pytest.fixture(scope='module')
-def uneven_row_data_file(tmpdir_factory):
-    """Create JSON data file with uneven rows (i.e. row have different number of fields)."""
-    testDir = tmpdir_factory.mktemp('test')
-    dataFile = testDir.join('uneven_row.json')
-    
-    with open(dataFile, "w") as dbFile:
-        json.dump(_UNEVEN_DATA_5xROWS_NxFLDS, dbFile)
-        
-    return str(dataFile)
-
-
 @pytest.fixture()
 def binary_data_file(tmpdir_factory):
     """Create a binary data file."""
@@ -74,7 +50,7 @@ def binary_data_file(tmpdir_factory):
 def empty_data_file(tmpdir_factory):
     """Create an empty data file."""
     testDir = tmpdir_factory.mktemp('test')
-    dataFile = testDir.join(uuid.uuid4().hex + '.json')
+    dataFile = testDir.join(uuid.uuid4().hex + '.sqlite')
     
     dataFile.write('')
     
@@ -137,7 +113,7 @@ def pp(capsys, data, frame=None):
 #                T E S T   F U N C T I O N S
 # =========================================================
 def test_save_data(capsys, faker, sample_data_fields, new_data_file):
-    """Happy path! Save data to db."""
+    """Happy path! Save data to database."""
     random.seed()
     dataOut = [valid_sample_data(faker) for i in range(random.randint(1,10))]
     dataHdrs = sample_data_fields
@@ -145,14 +121,49 @@ def test_save_data(capsys, faker, sample_data_fields, new_data_file):
     tblName = '_TEST_TABLE_'
 
     src.utils.datastore.sqlite.save_data(dataOut, dataFName, dataHdrs['sql'], tblName, True)
-    pp(capsys, dataOut, currentframe())
-    pp(capsys, dataHdrs['sql'], currentframe())
-    pp(capsys, dataFName, currentframe())
-    pp(capsys, tblName, currentframe())
+    
+    dbConn = src.utils.datastore.sqlite._connect_server(dataFName, False)
+    dbCur = dbConn.cursor()
+    tableExists = src.utils.datastore.sqlite._exist_table(dbCur, tblName)
+    assert tableExists
+    
+
+def test_get_data(capsys, faker, sample_data_fields, new_data_file):
+    """Happy path! Get data from databse."""
+    random.seed()
+    numRecs = random.randint(1,10)
+    dataOut = [valid_sample_data(faker) for i in range(numRecs)]
+    dataHdrs = sample_data_fields
+    dataFName = new_data_file
+    tblName = '_TEST_TABLE_'
+
+    src.utils.datastore.sqlite.save_data(dataOut, dataFName, dataHdrs['sql'], tblName, True)
+    dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['raw'], tblName, None, numRecs)
+
+    assert len(dataIn) == len(dataOut)
+    assert len(dataIn[0]) == len(dataOut[0])
+    
+    allExist = True
+    for rec in dataOut:
+        if rec not in dataIn:
+            allExist = False
+    assert allExist
+
+    dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['raw'], tblName, None, 0)
+    assert len(dataIn) == 0
+
+    dataIn = src.utils.datastore.sqlite.get_data(dataFName, dataHdrs['raw'], tblName, None, 999)
+    assert len(dataIn) == numRecs
 
 
 if False:    
   pp(capsys, data, currentframe())
+  pp(capsys, dataHdrs['sql'], currentframe())
+  pp(capsys, dataHdrs['raw'], currentframe())
+  pp(capsys, dataFName, currentframe())
+  pp(capsys, tblName, currentframe())
+  pp(capsys, dataOut, currentframe())
+  pp(capsys, dataIn, currentframe())
 
   def test__process_data(faker, sample_data_fields):
       """Happy path! Process data rows."""
@@ -274,30 +285,6 @@ if False:
           src.utils.datastore.json.save_data(dataOut, dataFName, None, True)
       exMsg = excinfo.value.args[0]
       assert exMsg == "argument of type 'NoneType' is not iterable"
-
-
-  def test_get_data(capsys, faker, sample_data_fields, new_data_file):
-      """Happy path! Save data to file."""
-      numRecs = random.randint(1,10)
-      dataOut = [valid_sample_data(faker) for i in range(numRecs)]
-      dataHdrs = sample_data_fields
-      dataFName = new_data_file
-
-      with open(dataFName, 'w') as dataFile:
-          json.dump(dataOut, dataFile)
-
-      dataIn = src.utils.datastore.json.get_data(dataFName, dataHdrs['raw'], numRecs, True)
-      assert len(dataIn) == len(dataOut)
-      assert len(dataIn[0]) == len(dataOut[0])
-      assert dataIn == dataOut
-
-      dataIn = src.utils.datastore.json.get_data(dataFName, dataHdrs['raw'], 0, True)
-      assert len(dataIn) == 0
-
-      dataIn = src.utils.datastore.json.get_data(dataFName, dataHdrs['raw'], 999, True)
-      assert len(dataIn) == numRecs
-      assert len(dataIn) == len(dataOut)
-      assert len(dataIn[0]) == len(dataOut[0])
 
 
   def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):

@@ -45,6 +45,7 @@ def _exist_table(dbCur, tblName):
     dbCur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='{}'".format(tblName))
 
     return True if dbCur.fetchone()[0] == 1 else False
+    
 
 
 def _create_table(dbCur, tblName, fldNamesWithTypes):

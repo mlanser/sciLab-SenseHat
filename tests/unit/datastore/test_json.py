@@ -232,7 +232,7 @@ def test__write_json_w_bad_params(new_data_file):
     
     
 def test_save_data(faker, sample_data_fields, new_data_file):
-    """Happy path! Save data to file."""
+    """Happy path! Save data to JSON file."""
     random.seed()
     dataOut = [valid_sample_data(faker) for i in range(random.randint(1,10))]
     dataHdrs = sample_data_fields
@@ -275,7 +275,8 @@ def test_save_data_w_bad_params(faker, sample_data_fields, empty_data_file, new_
 
 
 def test_get_data(capsys, faker, sample_data_fields, new_data_file):
-    """Happy path! Save data to file."""
+    """Happy path! Get data from JSON file."""
+    random.seed()
     numRecs = random.randint(1,10)
     dataOut = [valid_sample_data(faker) for i in range(numRecs)]
     dataHdrs = sample_data_fields
@@ -299,6 +300,7 @@ def test_get_data(capsys, faker, sample_data_fields, new_data_file):
 
     
 def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
+    random.seed()
     numRecs = random.randint(1,10)
     dataOut = [invalid_sample_data(faker) for i in range(numRecs)]
     dataHdrs = sample_data_fields
