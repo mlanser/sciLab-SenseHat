@@ -13,7 +13,7 @@ from .utils.collect_data import collect_temp, collect_humid, collect_pos, collec
 from .utils.show_data import show_current, show_history
 from .utils.store_data import save_to_sqlite, upload_to_remote
 
-from .lib.debug import debug_msg
+from .utils.debug.debug import debug_msg
 
 _APP_NAME_:     str = 'firstapp'
 _APP_CONFIG_:   str = 'config.ini'

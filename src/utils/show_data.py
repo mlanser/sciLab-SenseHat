@@ -16,7 +16,7 @@ def show_history():
 import http.client
 from datetime import datetime
 
-from ..lib.debug import debug_msg
+from .debug.debug import debug_msg
 
 _DB_ORDER_:  str = 'timestamp|ASC'
 _DB_FLDS_ = {
