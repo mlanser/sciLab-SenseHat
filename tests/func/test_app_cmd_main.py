@@ -9,6 +9,9 @@ from click.testing import CliRunner
 from src import cli
 
 
+# =========================================================
+#     G L O B A L S   &   P Y T E S T   F I X T U R E S
+# =========================================================
 @pytest.fixture
 def response():
     """Sample pytest fixture.
@@ -19,19 +22,23 @@ def response():
     # return requests.get('https://github.com/audreyr/cookiecutter-pypackage')
 
 
+# =========================================================
+#                T E S T   F U N C T I O N S
+# =========================================================
 def test_content(response):
     """Sample pytest test function with the pytest fixture as an argument."""
     # from bs4 import BeautifulSoup
     # assert 'GitHub' in BeautifulSoup(response.content).title.string
 
 
-def test_cli_cmd_MAIN_raw():
+def test_cli_cmd_MAIN_raw(new_config_file):
     """Test CLI '<DO THING>' command."""
     runner = CliRunner()
+    configFile = new_config_file
     
     result = runner.invoke(
         cli.main,
-        args=['--ini','tests/nuke.ini','dothing'],
+        args=['--ini', configFile,'nothing'],
     )
     assert True
 

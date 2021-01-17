@@ -3,9 +3,11 @@ import sqlite3
 import uuid
 import random
 
-import pprint
 import pytest
-from inspect import currentframe, getframeinfo
+from inspect import currentframe
+
+from tests.unit.helpers import pp
+from tests.unit.datastore.helpers import valid_sample_data, invalid_sample_data
 
 import src.utils.datastore.sqlite
 
@@ -15,9 +17,6 @@ import src.utils.datastore.sqlite
 # =========================================================
 _HDR_FLDS_RAW_ = {'strFld1': str, 'strFld2': str, 'strFld3': str, 'floatFld': float, 'intFld': int}
 _HDR_FLDS_SQL_ = {'strFld1': 'TEXT|idx', 'strFld2': 'TEXT|idx', 'strFld3': 'TEXT', 'floatFld': 'REAL', 'intFld': 'INT'}
-_VALID_DATA_ROW_ = {'strFld1': 'val1', 'strFld2': 'val2', 'strFld3': 'val3', 'floatFld': 4.0, 'intFld': 5}
-_TRUNCATED_DATA_ROW_ = {'strFld1': 'val1', 'strFld2': 'val2', 'floatFld': 4.0, 'intFld': 5, 'fruit': 'banana'}
-_INVALID_DATA_ROW_ = {'strFld1': 'val1', 'fruit': 'banana', 'strFld3': 'val3', 'floatFld': 'NOT FLOAT', 'intFld': 5}
 
 _EVEN_DATA_4xROWS_5xFLDS = [
     {"strFld1": "r1Val1","strFld2": "r1Val2","strFld3": "r1Val3","floatFld": "1.1","intFld": 10},
@@ -32,18 +31,6 @@ _UNEVEN_DATA_5xROWS_NxFLDS = [
     {"strFld1": "r3Val1","strFld2": "r3Val2"},
     {"strFld1": "r4Val1","strFld2": "r4Val2","strFld3": "r4Val3","floatFld": "4.4","intFld": 40,"foo": "bar","fizz": "buzz"}
 ]
-
-
-@pytest.fixture()
-def binary_data_file(tmpdir_factory):
-    """Create a binary data file."""
-    testDir = tmpdir_factory.mktemp('test')
-    dataFile = testDir.join(uuid.uuid4().hex + '.bin')
-    
-    with open(str(dataFile),'wb') as fp:
-        fp.write(bytes('First line\n2nd line\na third line', encoding="utf-8"))
-    
-    return str(dataFile)
 
 
 @pytest.fixture()
@@ -64,49 +51,6 @@ def new_data_file(tmpdir_factory):
     dataFile = testDir.join(uuid.uuid4().hex + '.sqlite')
     
     return str(dataFile)
-
-
-    
-# =========================================================
-#       L I T T L E   H E L P E R   F U N C T I O N S
-# =========================================================
-def valid_sample_data(faker):
-    """Create list with valid sample data."""
-    
-    random.seed()
-    data = {
-        'strFld1':  faker.word(),           # strFld1
-        'strFld2':  faker.word(),           # strFld2
-        'strFld3':  faker.word(),           # strFld3
-        'floatFld': random.random(),        # floadFld
-        'intFld':   random.randint(0,100),  # intFld
-    }
-    
-    return data
-  
-  
-def invalid_sample_data(faker):
-    """Create list with invalid sample data."""
-    
-    random.seed()
-    data = {
-        'strFld1':  faker.word(),           # strFld1
-        'strFld2':  faker.word(),           # strFld2
-        'strFld3':  faker.word(),           # strFld3
-        'floatFld': faker.word(),           # floadFld -- data not float
-        'intFld':   faker.word(),           # intFld   -- data not int
-    }
-    
-    return data
-  
-  
-def pp(capsys, data, frame=None):  
-    with capsys.disabled():
-        _PP_ = pprint.PrettyPrinter(indent=4)
-        print('\n')
-        if frame is not None:
-            print('LINE #: {}\n'.format(getframeinfo(frame).lineno))
-        _PP_.pprint(data)
 
     
 # =========================================================

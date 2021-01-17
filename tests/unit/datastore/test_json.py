@@ -3,9 +3,11 @@ import json
 import uuid
 import random
 
-import pprint
 import pytest
-from inspect import currentframe, getframeinfo
+from inspect import currentframe
+
+from tests.unit.helpers import pp
+from tests.unit.datastore.helpers import valid_sample_data, invalid_sample_data
 
 import src.utils.datastore.json
 
@@ -15,9 +17,6 @@ import src.utils.datastore.json
 # =========================================================
 _HDR_FLDS_RAW_ = {'strFld1': str, 'strFld2': str, 'strFld3': str, 'floatFld': float, 'intFld': int}
 _HDR_FLDS_JSON_ = {'strFld1': None, 'strFld2': None, 'strFld3': None, 'floatFld': None, 'intFld': None}
-_VALID_DATA_ROW_ = {'strFld1': 'val1', 'strFld2': 'val2', 'strFld3': 'val3', 'floatFld': 4.0, 'intFld': 5}
-_TRUNCATED_DATA_ROW_ = {'strFld1': 'val1', 'strFld2': 'val2', 'floatFld': 4.0, 'intFld': 5, 'fruit': 'banana'}
-_INVALID_DATA_ROW_ = {'strFld1': 'val1', 'fruit': 'banana', 'strFld3': 'val3', 'floatFld': 'NOT FLOAT', 'intFld': 5}
 
 _EVEN_DATA_4xROWS_5xFLDS = [
     {"strFld1": "r1Val1","strFld2": "r1Val2","strFld3": "r1Val3","floatFld": "1.1","intFld": 10},
@@ -34,7 +33,7 @@ _UNEVEN_DATA_5xROWS_NxFLDS = [
 ]
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def even_row_data_file(tmpdir_factory):
     """Create JSON data file with even rows (i.e. every row has same number of fields)."""
     testDir = tmpdir_factory.mktemp('test')
@@ -46,7 +45,7 @@ def even_row_data_file(tmpdir_factory):
     return str(dataFile)
 
   
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def uneven_row_data_file(tmpdir_factory):
     """Create JSON data file with uneven rows (i.e. row have different number of fields)."""
     testDir = tmpdir_factory.mktemp('test')
@@ -89,76 +88,35 @@ def new_data_file(tmpdir_factory):
     
     return str(dataFile)
 
-
-    
-# =========================================================
-#       L I T T L E   H E L P E R   F U N C T I O N S
-# =========================================================
-def valid_sample_data(faker):
-    """Create list with valid sample data."""
-    
-    random.seed()
-    data = {
-        'strFld1':  faker.word(),           # strFld1
-        'strFld2':  faker.word(),           # strFld2
-        'strFld3':  faker.word(),           # strFld3
-        'floatFld': random.random(),        # floadFld
-        'intFld':   random.randint(0,100),  # intFld
-    }
-    
-    return data
-  
-  
-def invalid_sample_data(faker):
-    """Create list with invalid sample data."""
-    
-    random.seed()
-    data = {
-        'strFld1':  faker.word(),           # strFld1
-        'strFld2':  faker.word(),           # strFld2
-        'strFld3':  faker.word(),           # strFld3
-        'floatFld': faker.word(),           # floadFld -- data not float
-        'intFld':   faker.word(),           # intFld   -- data not int
-    }
-    
-    return data
-  
-  
-def pp(capsys, data, frame=None):  
-    with capsys.disabled():
-        _PP_ = pprint.PrettyPrinter(indent=4)
-        print('\n')
-        if frame is not None:
-            print('LINE #: {}\n'.format(getframeinfo(frame).lineno))
-        _PP_.pprint(data)
-
     
 # =========================================================
 #                T E S T   F U N C T I O N S
 # =========================================================
-def test__process_data(faker, sample_data_fields):
+def test__process_data(faker, sample_data_fields, truncated_data_row):
     """Happy path! Process data rows."""
     random.seed()
-    dataHdrs = sample_data_fields
+    hdrs = sample_data_fields
     dataIn = [valid_sample_data(faker) for i in range(random.randint(1,10))]
-    dataOut = src.utils.datastore.json._process_data(dataIn, dataHdrs['raw'])
+    dataOut = src.utils.datastore.json._process_data(dataIn, hdrs['raw'])
     assert len(dataOut[0]) == 5
 
-    dataIn = [_TRUNCATED_DATA_ROW_]
-    dataOut = src.utils.datastore.json._process_data([_TRUNCATED_DATA_ROW_], dataHdrs['raw'])
+    dataIn = [truncated_data_row]
+    dataOut = src.utils.datastore.json._process_data(dataIn, hdrs['raw'])
     assert len(dataOut[0]) == 4
 
 
-def test__process_data_w_bad_params(sample_data_fields):
+def test__process_data_w_bad_params(sample_data_fields, valid_data_row):
     """Test with invalid parameters."""
-    dataHdrs = sample_data_fields
+    hdrs = sample_data_fields
+    dataIn = [valid_data_row]
+    
     with pytest.raises(AttributeError) as excinfo:
-        dataOut = src.utils.datastore.json._process_data('--INVALID--', dataHdrs['raw'])
+        dataOut = src.utils.datastore.json._process_data('--INVALID--', hdrs['raw'])
     exMsg = excinfo.value.args[0]
     assert exMsg == "'str' object has no attribute 'keys'"
 
     with pytest.raises(TypeError) as excinfo:
-        dataOut = src.utils.datastore.json._process_data([_VALID_DATA_ROW_], None)
+        dataOut = src.utils.datastore.json._process_data(dataIn, None)
     exMsg = excinfo.value.args[0]
     assert exMsg == "'NoneType' object is not iterable"
 
@@ -234,11 +192,11 @@ def test__write_json_w_bad_params(new_data_file):
 def test_save_data(capsys, faker, sample_data_fields, new_data_file):
     """Happy path! Save data to JSON file."""
     random.seed()
+    hdrs = sample_data_fields
     dataOut = [valid_sample_data(faker) for i in range(random.randint(1,10))]
-    dataHdrs = sample_data_fields
     dataFName = new_data_file
 
-    src.utils.datastore.json.save_data(dataOut, dataFName, dataHdrs['raw'], True)
+    src.utils.datastore.json.save_data(dataOut, dataFName, hdrs['raw'], True)
 
     with open(dataFName, 'r') as dataFile:
         dataIn = json.load(dataFile)
@@ -250,20 +208,20 @@ def test_save_data(capsys, faker, sample_data_fields, new_data_file):
 def test_save_data_w_bad_params(capsys, faker, sample_data_fields, empty_data_file, new_data_file):
     """Test with invalid parameters."""
     random.seed()
+    hdrs = sample_data_fields
     dataOut = [invalid_sample_data(faker) for i in range(random.randint(1,10))]
-    dataHdrs = sample_data_fields
     dataFName = new_data_file
     existFName = empty_data_file
 
     # Test writing to 'None' as filename
     with pytest.raises(TypeError) as excinfo:
-        src.utils.datastore.json.save_data(dataOut, None, dataHdrs['json'])
+        src.utils.datastore.json.save_data(dataOut, None, hdrs['json'])
     exMsg = excinfo.value.args[0]
     assert 'path should be string, bytes, os.PathLike or integer' in exMsg
     
     # Test writing to non-existant file with incorrect 'force' flag
     with pytest.raises(OSError) as excinfo:
-        src.utils.datastore.json.save_data(dataOut, '--INVALID--', dataHdrs['raw'], False)
+        src.utils.datastore.json.save_data(dataOut, '--INVALID--', hdrs['raw'], False)
     exMsg = excinfo.value.args[0]
     assert exMsg == "JSON data file '--INVALID--' does not exist!"
 
@@ -277,33 +235,34 @@ def test_save_data_w_bad_params(capsys, faker, sample_data_fields, empty_data_fi
 def test_get_data(capsys, faker, sample_data_fields, new_data_file):
     """Happy path! Get data from JSON file."""
     random.seed()
+    hdrs = sample_data_fields
     numRecs = random.randint(1,10)
     dataOut = [valid_sample_data(faker) for i in range(numRecs)]
-    dataHdrs = sample_data_fields
     dataFName = new_data_file
     
     with open(dataFName, 'w') as dataFile:
         json.dump(dataOut, dataFile)
 
-    dataIn = src.utils.datastore.json.get_data(dataFName, dataHdrs['raw'], numRecs, True)
+    dataIn = src.utils.datastore.json.get_data(dataFName, hdrs['raw'], numRecs, True)
     assert len(dataIn) == len(dataOut)
     assert len(dataIn[0]) == len(dataOut[0])
     assert dataIn == dataOut
 
-    dataIn = src.utils.datastore.json.get_data(dataFName, dataHdrs['raw'], 0, True)
+    dataIn = src.utils.datastore.json.get_data(dataFName, hdrs['raw'], 0, True)
     assert len(dataIn) == 0
 
-    dataIn = src.utils.datastore.json.get_data(dataFName, dataHdrs['raw'], 999, True)
+    dataIn = src.utils.datastore.json.get_data(dataFName, hdrs['raw'], 999, True)
     assert len(dataIn) == numRecs
     assert len(dataIn) == len(dataOut)
     assert len(dataIn[0]) == len(dataOut[0])
 
     
-def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file):
+def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file, valid_data_row):
+    """Test with invalid parameters."""
     random.seed()
     numRecs = random.randint(1,10)
     dataOut = [invalid_sample_data(faker) for i in range(numRecs)]
-    dataHdrs = sample_data_fields
+    hdrs = sample_data_fields
     dataFName = new_data_file
 
     # Test reading from non-existant file
@@ -311,8 +270,9 @@ def test_get_data_w_bad_params(capsys, faker, sample_data_fields, new_data_file)
     assert dataIn == []
 
     # Test invalid headers/field names
+    dataOut = [valid_data_row]
     with open(dataFName, 'w') as dataFile:
-        json.dump([_VALID_DATA_ROW_], dataFile)
+        json.dump(dataOut, dataFile)
 
     with pytest.raises(TypeError) as excinfo:
         dataIn = src.utils.datastore.json.get_data(dataFName, None, 1, True)
