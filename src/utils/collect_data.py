@@ -2,16 +2,16 @@
 #             G E N E R I C   F U N C T I O N S
 # =========================================================
 def collect_temp():
-  pass
+    pass
 
 
 def collect_humid():
-  pass
-  
+    pass
+
 
 def collect_pos():
-  pass
+    pass
 
 
 def collect_joystick():
-  pass
+    pass

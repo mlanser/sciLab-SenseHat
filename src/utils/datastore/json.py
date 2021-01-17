@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 
 # =========================================================
@@ -12,7 +12,7 @@ def _process_data(dataIn, flds):
     # comprehension and, of course, a common set of keys ;-)
     for row in dataIn:
         commonFlds = list(set(row.keys()) & set(flds))
-        
+
         if len(commonFlds) > 0:
             dataOut.append({key: row[key] for key in commonFlds})
 
@@ -23,28 +23,28 @@ def _read_json(dbFName):
     try:
         dbFile = open(dbFName, "r")
         data = json.load(dbFile)
-        
+
     except json.JSONDecodeError as e:
         raise OSError("Failed to read data from '{}'!\n{}".format(dbFName, e))
 
     else:
         dbFile.close()
-        
+
     return data
 
-        
+
 def _write_json(dbFName, data):
     try:
         dbFile = open(dbFName, "w")
         json.dump(data, dbFile)
-        
+
     except OSError as e:
         raise OSError("Failed to write data to '{}'!\n{}".format(dbFName, e))
-        
+
     else:
         dbFile.close()
-    
-    
+
+
 # =========================================================
 #            S A V E   D A T A   F U N C T I O N S
 # =========================================================
@@ -72,13 +72,13 @@ def save_data(data, dbFName, dbFlds, force=True):
                 raise OSError("Failed to create path '{}'!\n{}".format(path, e))
         else:
             raise OSError("JSON data file '{}' does not exist!".format(dbFName))
-            
+
     try:
         oldData = _read_json(dbFName) if os.path.exists(dbFName) else None
-        
-    except OSError:             # We'll just 'overwrite' the file
-        oldData = None          # if it's empty or if we can't read it.
-        
+
+    except OSError:  # We'll just 'overwrite' the file
+        oldData = None  # if it's empty or if we can't read it.
+
     try:
         newData = _process_data(data, dbFlds)
         _write_json(dbFName, newData if oldData is None else oldData + newData)

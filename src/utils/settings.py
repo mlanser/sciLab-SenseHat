@@ -1,23 +1,21 @@
 import os
-import re
+from configparser import ConfigParser, ExtendedInterpolation, Error
+
 import click
 
-from configparser import ConfigParser, ExtendedInterpolation, Error
-from sys import modules as sysmods
+# from .speedtest import get_speed_data
 
-#from .speedtest import get_speed_data
+_DB_NAME_: str = 'scilab'
+_DB_TABLE_: str = 'SpeedTest'
 
-_DB_NAME_:    str = 'scilab'
-_DB_TABLE_:   str = 'SpeedTest'
+_CSV_: str = 'csv'
+_JSON_: str = 'json'
+_SQLite_: str = 'sqlite'
+_API_: str = 'api'
 
-_CSV_:        str = 'csv'
-_JSON_:       str = 'json'
-_SQLite_:     str = 'sqlite'
-_API_:        str = 'api'
-
-_SCTN_DATA_:  str = 'data'
-_SCTN_MAIN_:  str = 'main'
-_SCTN_ALL_:   str = 'all'  
+_SCTN_DATA_: str = 'data'
+_SCTN_MAIN_: str = 'main'
+_SCTN_ALL_: str = 'all'
 
 
 # =========================================================
@@ -72,18 +70,18 @@ def _get_data_settings(ctxGlobals):
             'retain': retain,
             'history': history,
             'sort': sort.lower(),
-            }
         }
-    
+    }
+
     return settings
 
 
 def _validate_data_settings(settings):
-    # 
-    # @NOTE - there are no required items in this section 
-    #         and we're only keeping this function to be 
+    #
+    # @NOTE - there are no required items in this section
+    #         and we're only keeping this function to be
     #         consistent with other config sections.
-    # 
+    #
     return True
 
 
@@ -96,7 +94,7 @@ def _validate_data_settings(settings):
 # sleep = [1-60]                        - seconds between each test run
 #
 # threads = single|multi                - run single or multiple threads
-# unit = bits|bytes                     - display speeds in Mbits/s or MB/s 
+# unit = bits|bytes                     - display speeds in Mbits/s or MB/s
 # share = yes|no                        - share test results
 # location = <some location name>       - name of location where test computer is located
 # locationTZ = <TZ name>                - Time zone at location (e.g. 'America/New York')
@@ -111,11 +109,11 @@ def _validate_data_settings(settings):
 #
 def _get_main_settings(ctxGlobals):
     defaults = {
-        'count': 1, 'sleep': 60, 'threads': 'multi', 'unit': 'bits', 'share': False, 
-        'location': None, 'locationTZ': None, 
-        'host': None, 'ssl': False, 
+        'count': 1, 'sleep': 60, 'threads': 'multi', 'unit': 'bits', 'share': False,
+        'location': None, 'locationTZ': None,
+        'host': None, 'ssl': False,
     }
-    
+
     count = click.prompt(
         "Enter default for number of test cycle runs:",
         type=click.IntRange(ctxGlobals['appMinRuns'], ctxGlobals['appMaxRuns'], clamp=True),
@@ -128,62 +126,62 @@ def _get_main_settings(ctxGlobals):
         default='60',
         show_default=True,
     )
-    
+
     threads = click.prompt(
-        "Number of threads for SpeedTest", 
+        "Number of threads for SpeedTest",
         type=click.Choice(['single', 'multi'], case_sensitive=False),
         default='multi',
         show_default=True,
     )
     unit = click.prompt(
-        "Select speed rate unit per second", 
+        "Select speed rate unit per second",
         type=click.Choice(['bits', 'bytes'], case_sensitive=False),
         default='bits',
         show_default=True,
     )
     share = click.prompt(
-        "Share test results", 
+        "Share test results",
         type=click.Choice(['yes', 'no'], case_sensitive=False),
         default='no',
         show_default=True,
     )
     location = click.prompt(
-        "Name of location where test is run", 
+        "Name of location where test is run",
     )
     locationTZ = click.prompt(
-        "Name of (PYTZ) timezone for location", 
+        "Name of (PYTZ) timezone for location",
         default='America/New_York',
         show_default=True,
     )
-    
+
     storage = click.prompt(
-        "Enter data storage type", 
+        "Enter data storage type",
         type=click.Choice(['CSV', 'JSON', 'SQLite', 'API'], case_sensitive=False),
         default='SQLite',
         show_default=True,
     )
-    
+
     if storage.lower() == _CSV_:
         settings = _get_main_settings_CSV(defaults, ctxGlobals)
-        
+
     elif storage.lower() == _JSON_:
         settings = _get_main_settings_JSON(defaults, ctxGlobals)
-        
+
     elif storage.lower() == _SQLite_:
         settings = _get_main_settings_SQLite(defaults, ctxGlobals)
-        
+
     # elif storage.lower() == _API_:
     #    settings = _get_main_settings_API(defaults, ctxGlobals)
-        
+
     else:
         raise ValueError("Invalid storage type '{}'".format(storage))
-        
+
     settings.update([
         ('count', count),
         ('sleep', sleep),
         ('threads', ('multi' if threads.lower() != 'single' else 'single')),
         ('unit', ('bits' if unit.lower() != 'bytes' else 'bytes')),
-        ('share', (False if share.lower() != 'yes' else True)), 
+        ('share', (False if share.lower() != 'yes' else True)),
         ('location', location),
         ('locationTZ', locationTZ),
         ('storage', storage),
@@ -202,8 +200,8 @@ def _get_main_settings_CSV(defaults, ctxGlobals):
 
     defaults.update([('host', host)])
     return defaults
-    
-    
+
+
 def _get_main_settings_JSON(defaults, ctxGlobals):
     host = click.prompt(
         "Enter path to JSON data file",
@@ -235,6 +233,8 @@ def _get_main_settings_SQLite(defaults, ctxGlobals):
 
 def _get_main_settings_API(defaults, ctxGlobals):
     pass
+
+
 #    host = click.prompt(
 #        "Enter database URL (protocal, host, and port)",
 #        default='http://localhost:8086',
@@ -289,10 +289,10 @@ def _verify_datastore(settings):
 def isvalid_settings(settings):
     """Validate (to some degree) that application settings (e.g. ensure that
     that required options are present, etc.).
-    
+
     Args:
         settings: Settings to validate
-        
+
     Returns:
         TRUE if settings pass all tests, else FALSE.
     """
@@ -308,7 +308,7 @@ def isvalid_settings(settings):
 
     if not _validate_main_settings(settings):
         return False
-    
+
     if not _validate_sometest_settings(settings):
         return False
 
@@ -317,17 +317,17 @@ def isvalid_settings(settings):
 
 def read_settings(ctxGlobals):
     """Read/parse all application settings from config file.
-    
+
     Args:
         ctxGlobals: List of misc global values stored in CTX app object
-        
+
     Returns:
         Config object with all settings
-        
+
     Raises:
-        OSError:    If unable to read config file 
+        OSError:    If unable to read config file
     """
-    
+
     if os.path.exists(ctxGlobals['configFName']):
         try:
             config = ConfigParser(interpolation=ExtendedInterpolation(), allow_no_value=True)
@@ -338,16 +338,16 @@ def read_settings(ctxGlobals):
         raise OSError("Config file '{}' does NOT exist or cannot be accessed!".format(ctxGlobals['configFName']))
 
     return config
-        
-        
+
+
 def save_settings(ctxGlobals, section, overwrite=False):
     """Save application settings to config file.
-    
+
     Args:
         ctxGlobals: List of misc global values stored in CTX app object
         section:    Name of section to update. Or use 'all' to update all settings.
         overwrite:  If true, create config file if it does not already exist.
-        
+
     Raises:
         ValueError: If invalid section name.
         OSError:    If config file already exists.
@@ -365,7 +365,8 @@ def save_settings(ctxGlobals, section, overwrite=False):
     elif overwrite:
         config.read(ctxGlobals['configFName'])
     else:
-        raise OSError("Config file '{}' already exists.\n\nPlease use '--force' flag to overwrite it.".format(ctxGlobals['configFName']))
+        raise OSError("Config file '{}' already exists.\n\nPlease use '--force' flag to overwrite it.".format(
+            ctxGlobals['configFName']))
 
     if section in [_SCTN_ALL_, _SCTN_DATA_]:
         config.read_dict(_get_data_settings(ctxGlobals))
@@ -379,7 +380,7 @@ def save_settings(ctxGlobals, section, overwrite=False):
 
 def show_settings(ctxGlobals, section, verify=False):
     """Retrieve and display application settings from config file.
-    
+
     Args:
         ctxGlobals: List of misc global values stored in CTX app object
         section:    Name of section to display. Or use 'all' to view all settings.
@@ -415,7 +416,7 @@ def show_settings(ctxGlobals, section, verify=False):
         # sleep = [1-60]                        - seconds between each test run
         #
         # threads = single|multi                - run single or multiple threads
-        # unit = bits|bytes                     - display speeds in Mbits/s or MB/s 
+        # unit = bits|bytes                     - display speeds in Mbits/s or MB/s
         # share = yes|no                        - share test results
         # location = <some location name>       - name of location where test computer is located
         # locationTZ = <TZ name>                - Time zone at location (e.g. 'America/New York')

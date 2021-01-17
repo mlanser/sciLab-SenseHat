@@ -16,16 +16,16 @@ def _connect_server(dbFName, force=True):
 
             except OSError as e:
                 raise OSError("Failed to create path '{}'!\n{}".format(path, e))
-                
+
         else:
             raise OSError("SQLite data file '{}' does not exist!".format(dbFName))
-            
+
     try:
         dbConn = sqlite3.connect(dbFName)
-        
+
     except sqlite3.Error as e:
         raise OSError("Failed to connect to SQLite database '{}'\n{}!".format(dbFName, e))
-    
+
     return dbConn
 
 
@@ -45,7 +45,6 @@ def _exist_table(dbCur, tblName):
     dbCur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='{}'".format(tblName))
 
     return True if dbCur.fetchone()[0] == 1 else False
-    
 
 
 def _create_table(dbCur, tblName, fldNamesWithTypes):
@@ -63,11 +62,11 @@ def _create_table(dbCur, tblName, fldNamesWithTypes):
             return parts[0], True if parts[1].lower() == 'idx' else False
         else:
             return parts[0], False
-    
+
     flds = ','.join("{!s} {!s}".format(key, _split_type_idx(val)[0]) for (key, val) in fldNamesWithTypes.items())
     dbCur.execute("CREATE TABLE IF NOT EXISTS {0} ({1});".format(tblName, flds))
-        
-    # SQLite automatically creates a 'primary key' column and we'll therefore 
+
+    # SQLite automatically creates a 'primary key' column and we'll therefore
     # only create indexed columns as indicated in 'fldNamesWithTypes'.
     for (key, val) in fldNamesWithTypes.items():
         if _split_type_idx(val)[1]:
@@ -110,17 +109,17 @@ def save_data(data, dbFName, tblFlds, tblName, force=True):
 
     if not _exist_table(dbCur, tblName):
         _create_table(dbCur, tblName, tblFlds)
-    
+
     # Filter each row to only hold approved keys using dictionary
     # comprehension and, of course, a common set of keys ;-)
     fldNames = tblFlds.keys()
     for row in data:
         commonFlds = list(set(row.keys()) & set(fldNames))
-        
+
         if len(commonFlds) > 0:
             flds = ','.join(commonFlds)
             vals = ','.join("?" for (_) in commonFlds)
-            # Using list comprehension to only pull values 
+            # Using list comprehension to only pull values
             # that we want/need from a row of data
             dbCur.execute("INSERT INTO {}({}) VALUES({})".format(tblName, flds, vals),
                           [row[key] for key in commonFlds])
@@ -149,38 +148,38 @@ def get_data(dbFName, tblFlds, tblName, orderBy=None, numRecs=1, first=True):
 
     dbConn = _connect_server(dbFName, False)
     dbCur = dbConn.cursor()
-    
+
     fldNames = tblFlds.keys()
     flds = ','.join("{!s}".format(key) for key in fldNames)
     sortFld = list(fldNames)[0] if orderBy is None else orderBy
-        
-    try:  
-      if first:
-          dbCur.execute('SELECT {flds} FROM {tbl} {order} LIMIT {limit}'.format(
-              flds=flds,
-              tbl=tblName,
-              order=_create_orderby_param(sortFld),
-              limit=numRecs
-          ))
-      else:    
-          dbCur.execute('SELECT * FROM (SELECT {flds} FROM {tbl} {inner} LIMIT {limit}) {order}'.format(
-              flds=flds,
-              tbl=tblName,
-              inner=_create_orderby_param(sortFld, True),
-              limit=numRecs,
-              order=_create_orderby_param(sortFld)
-          ))
 
-      dataRecords = dbCur.fetchall()
+    try:
+        if first:
+            dbCur.execute('SELECT {flds} FROM {tbl} {order} LIMIT {limit}'.format(
+                flds=flds,
+                tbl=tblName,
+                order=_create_orderby_param(sortFld),
+                limit=numRecs
+            ))
+        else:
+            dbCur.execute('SELECT * FROM (SELECT {flds} FROM {tbl} {inner} LIMIT {limit}) {order}'.format(
+                flds=flds,
+                tbl=tblName,
+                inner=_create_orderby_param(sortFld, True),
+                limit=numRecs,
+                order=_create_orderby_param(sortFld)
+            ))
+
+        dataRecords = dbCur.fetchall()
 
     except sqlite3.Error as e:
         raise OSError("Failed to retrieve data from SQLite database '{}'\n{}!".format(dbFName, e))
-        
+
     dbConn.close()
-      
+
     data = []
     for row in dataRecords:
-        # Create dictionary with keys from field name 
+        # Create dictionary with keys from field name
         # list, mapped against vaues from database.
         data.append(dict(zip(tblFlds.keys(), row)))
 

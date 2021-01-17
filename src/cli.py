@@ -1,30 +1,26 @@
-import requests
 import os
-import sys
 import re
-import click
+import sys
 import time
-from dateutil import parser
-import pytz
 
-from pathlib import Path
-from .utils.settings import read_settings, save_settings, show_settings, isvalid_settings
-from .utils.collect_data import collect_temp, collect_humid, collect_pos, collect_joystick
-from .utils.show_data import show_current, show_history
-from .utils.store_data import save_to_sqlite, upload_to_remote
+import click
+import pytz
+import requests
+from dateutil import parser
 
 from .utils.debug.debug import debug_msg
+from .utils.settings import read_settings, save_settings, show_settings, isvalid_settings
 
-_APP_NAME_:     str = 'firstapp'
-_APP_CONFIG_:   str = 'config.ini'
+_APP_NAME_: str = 'firstapp'
+_APP_CONFIG_: str = 'config.ini'
 _APP_MIN_RUNS_: int = 1
 _APP_MAX_RUNS_: int = 100
-_APP_HISTORY_:  int = 1000
-_APP_SLEEP_:    int = 60
-_APP_BITS_:     str = 'bits'
+_APP_HISTORY_: int = 1000
+_APP_SLEEP_: int = 60
+_APP_BITS_: str = 'bits'
 
-_DB_NAME_:      str = 'scilab'
-_DB_TABLE_:     str = 'FirstApp'
+_DB_NAME_: str = 'scilab'
+_DB_TABLE_: str = 'FirstApp'
 
 
 # =========================================================
@@ -73,7 +69,6 @@ def _pad_list(inList, maxLen, defaultVal):
 
 
 def _data_formatter(rowData, rowNum=0, isRaw=False, rateUnit=_APP_BITS_):
-
     def _date_maker(timestamp, timezone, fmtStr):
         dateOrig = parser.isoparse(timestamp)
         dateFinal = dateOrig if timezone is None else dateOrig.astimezone(pytz.timezone(timezone))
@@ -86,7 +81,7 @@ def _data_formatter(rowData, rowNum=0, isRaw=False, rateUnit=_APP_BITS_):
         return defaultVal if 'ping' not in data else float(data['ping'])
 
     def _parse_speed(data, fldName, divisor, defaultVal):
-        return defaultVal if fldName not in data else float(data[fldName]/divisor)
+        return defaultVal if fldName not in data else float(data[fldName] / divisor)
 
     na = '- n/a -'
     dateTimeFmtStr = '%m/%d/%y %H:%M'
@@ -128,7 +123,7 @@ def show_speed_data_summary(data, isRaw=False, rateUnit=_APP_BITS_):
     if isRaw:
         template += "PING: {:8.3f} ms\nDOWN: {:8.2f} " + rateUnitLabel + "\nUP:   {:8.2f} " + rateUnitLabel
     else:
-        template += "PING: {:8s} ms\nDOWN: {:8s} "     + rateUnitLabel + "\nUP:   {:8s} "   + rateUnitLabel
+        template += "PING: {:8s} ms\nDOWN: {:8s} " + rateUnitLabel + "\nUP:   {:8s} " + rateUnitLabel
 
     click.echo(template.format(*_data_formatter(data, 0, isRaw, rateUnit)))
     click.echo()
@@ -200,19 +195,19 @@ def show_speed_data_table(data, showRowNum=True, isRaw=False, rateUnit=_APP_BITS
     if showRowNum:
         #           |12345|123456789123456789|123456789123456789|1234567890|1234567890|1234567890|
         #           |     |                  |                  |          |          |          |
-        hdr1      = "     |              Date/Time              |          |          |          "
-        hdr2      = "     |        UTC       |   At Location    |   PING   |   DOWN   |    UP    "
-        hdr3      = "  #  |  MM/DD/YY HH:MM  |  MM/DD/YY HH:MM  |    ms    |  {0:^6s}  |  {0:^6s}  ".format(unitLbl)
-        divider   = "-----|------------------|------------------|----------|----------|----------"
+        hdr1 = "     |              Date/Time              |          |          |          "
+        hdr2 = "     |        UTC       |   At Location    |   PING   |   DOWN   |    UP    "
+        hdr3 = "  #  |  MM/DD/YY HH:MM  |  MM/DD/YY HH:MM  |    ms    |  {0:^6s}  |  {0:^6s}  ".format(unitLbl)
+        divider = "-----|------------------|------------------|----------|----------|----------"
 
         col1 = " {:>3s} |  {!s:14s}  |  {!s:14s}  |" if isRaw else " {:>3s} |  {:14s}  |  {:14s}  |"
     else:
         #           |123456789012345678|123456789012345678|1234567890|1234567890|1234567890|
         #           |                  |                  |          |          |          |
-        hdr1      = "              Date/Time              |          |          |          "
-        hdr2      = "        UTC       |    At Location   |   PING   |   DOWN   |    UP    "
-        hdr3      = "  MM/DD/YY HH:MM  |  MM/DD/YY HH:MM  |    ms    |  {0:^6s}  |  {0:^6s}  ".format(unitLbl)
-        divider   = "------------------|------------------|----------|----------|----------"
+        hdr1 = "              Date/Time              |          |          |          "
+        hdr2 = "        UTC       |    At Location   |   PING   |   DOWN   |    UP    "
+        hdr3 = "  MM/DD/YY HH:MM  |  MM/DD/YY HH:MM  |    ms    |  {0:^6s}  |  {0:^6s}  ".format(unitLbl)
+        divider = "------------------|------------------|----------|----------|----------"
 
         col1 = "  {!s:14s}  |  {!s:14s}  |" if isRaw else "  {:14s}  |  {:14s}  |"
 
@@ -336,7 +331,7 @@ def main(ctx, ini: str = ''):
             'dbTable': _DB_TABLE_,
         }
     }
-    
+
     return 0
 
 
@@ -444,7 +439,7 @@ def config(ctx, section: str, update: bool, force: bool, verify: bool):
 @click.pass_context
 def dothing(ctx, display: str, save: bool, summary_only: bool, cntr: int, history: bool, first: bool):
     """This is the main thing that this app does.
-    
+
     Replace this text with whatever this things does :-)
 
     \b

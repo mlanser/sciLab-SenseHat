@@ -1,5 +1,5 @@
-import os
 import csv
+import os
 
 
 # =========================================================
@@ -8,7 +8,7 @@ import csv
 def _row_counter(fp):
     for cntr, row in enumerate(fp, 0):  # Count all lines/rows ...
         pass
-    fp.seek(0)                          # ... and 'rewind' file to beginning
+    fp.seek(0)  # ... and 'rewind' file to beginning
 
     return cntr
 
@@ -17,7 +17,7 @@ def _process_row(rowIn, flds):
     rowOut = {}
     for key, val in rowIn.items():
         if key in flds:
-            rowOut.update({key : flds[key](val)})
+            rowOut.update({key: flds[key](val)})
 
     return rowOut
 
@@ -27,7 +27,7 @@ def _process_row(rowIn, flds):
 # =========================================================
 def save_data(data, dbFName, dbFlds, force=True):
     """Save data to CSV file.
-    
+
     Args:
         data:    List with one or more data rows
         dbFName: CSV file name
@@ -47,10 +47,10 @@ def save_data(data, dbFName, dbFlds, force=True):
 
             except OSError as e:
                 raise OSError("Failed to create path '{}'!\n{}".format(path, e))
-                
+
         else:
             raise OSError("CSV data file '{}' does not exist!".format(dbFName))
-    
+
     with open(dbFName, 'a+', newline='') as dbFile:
         dataWriter = csv.DictWriter(dbFile, dbFlds.keys(), extrasaction='ignore')
 
@@ -63,14 +63,14 @@ def save_data(data, dbFName, dbFlds, force=True):
 
         except csv.Error as e:
             raise OSError("Failed to save data to '{}'!\n{}".format(dbFName, e))
-    
+
 
 # =========================================================
 #            G E T   D A T A   F U N C T I O N S
 # =========================================================
 def get_data(dbFName, dbFlds, numRecs=1, first=True):
     """Retrieve data from CSV file.
-    
+
     Args:
         dbFName:  CSV file name
         dbFlds:   Dict with field names (as keys) and data types
@@ -83,28 +83,28 @@ def get_data(dbFName, dbFlds, numRecs=1, first=True):
 
     if not os.path.exists(dbFName):
         raise OSError("Data file '{}' does not exist!".format(dbFName))
-      
-    numRecs = max(1, numRecs)  
+
+    numRecs = max(1, numRecs)
     data = []
     with open(dbFName, 'r', newline='') as dbFile:
         lastRec = numRecs if first else _row_counter(dbFile)
         firstRec = 1 if first else max(1, lastRec - numRecs + 1)
-        
+
         dataReader = csv.DictReader(dbFile, dbFlds.keys())
 
-        try:    
+        try:
             for i, row in enumerate(dataReader, 0):
                 if i < firstRec:
                     continue;
                 elif i > lastRec:
                     break
-                else:    
+                else:
                     data.append(_process_row(row, dbFlds))
 
         except csv.Error as e:
             raise OSError("Failed to read data from '{}'!\n{}".format(dbFName, e))
 
-        if len(data) < 1:    
+        if len(data) < 1:
             raise OSError("Empty data file")
-            
+
     return data

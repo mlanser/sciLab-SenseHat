@@ -1,8 +1,8 @@
 import pprint
 
-_MAXLEN_:    int = 80
+_MAXLEN_: int = 80
 _LINE_CHAR_: str = '-'
-_SPACER_:    str = ' | '
+_SPACER_: str = ' | '
 
 
 def debug_msg(data, hdr=None, msg=None):
