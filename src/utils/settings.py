@@ -283,9 +283,9 @@ def _verify_datastore(settings):
     return '- Data store OK!'
 
 
-# ---------------------------------------------------------
-#                  Manage Data/Settings
-# ---------------------------------------------------------
+# =========================================================
+#               C O R E   F U N C T I O N S
+# =========================================================
 def isvalid_settings(settings):
     """Validate (to some degree) that application settings (e.g. ensure that
     that required options are present, etc.).

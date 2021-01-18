@@ -18,6 +18,8 @@ requirements = [
     'pytz',
     'requests',
     'tzlocal',
+    'Pillow',
+    'evdev',
 ]
 
 setup_requirements = [
@@ -41,25 +43,26 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Operating System :: OS Independent',
     ],
-    description="Testing boilerplate code for Click app",
+    description="This sciLab app collects and stores data frome the RPI SenseHAT component.",
     entry_points={
         'console_scripts': [
-            'firstapp=src.cli:main',
+            'sensehat=src.cli:main',
         ],
     },
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='firstapp',
-    name='firstapp',
+    keywords='sensehat',
+    name='sensehat',
     packages=find_packages(include=['src', 'src.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/mlanser/firstapp',
+    url='https://github.com/mlanser/sciLab-SenseHat',
     version='0.1.0',
     zip_safe=False,
 )
