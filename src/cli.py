@@ -11,7 +11,7 @@ from dateutil import parser
 from .utils.debug.debug import debug_msg
 from .utils.settings import read_settings, save_settings, show_settings, isvalid_settings
 
-_APP_NAME_: str = 'firstapp'
+_APP_NAME_: str = 'pired'
 _APP_CONFIG_: str = 'config.ini'
 _APP_MIN_RUNS_: int = 1
 _APP_MAX_RUNS_: int = 100
@@ -20,7 +20,7 @@ _APP_SLEEP_: int = 60
 _APP_BITS_: str = 'bits'
 
 _DB_NAME_: str = 'scilab'
-_DB_TABLE_: str = 'FirstApp'
+_DB_TABLE_: str = 'piRed'
 
 
 # =========================================================

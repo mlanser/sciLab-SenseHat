@@ -20,6 +20,8 @@ requirements = [
     'tzlocal',
     'Pillow',
     'evdev',
+    'rich',
+    'pretty_errors',
 ]
 
 setup_requirements = [
@@ -29,6 +31,7 @@ setup_requirements = [
 test_requirements = [
     'pytest>=3',
     'Faker',
+    'pytest-mock',
 ]
 
 setup(
@@ -46,18 +49,18 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Operating System :: OS Independent',
     ],
-    description="This sciLab app collects and stores data frome the RPI SenseHAT component.",
+    description="This sciLab app collects and stores data frome the RPI SenseHAT component, OpenWeather API, etc. It is specifically designed to run on the 'pired' unit (RP3 B+).",
     entry_points={
         'console_scripts': [
-            'sensehat=src.cli:main',
+            'pired=src.cli:main',
         ],
     },
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='sensehat',
-    name='sensehat',
+    keywords=['sensehat','raspberrypi'],
+    name='pired',
     packages=find_packages(include=['src', 'src.*']),
     setup_requires=setup_requirements,
     test_suite='tests',

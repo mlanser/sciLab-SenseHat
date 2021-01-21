@@ -2,6 +2,9 @@ import pytest
 import src.utils.debug.debug
 
 
+# =========================================================
+#     G L O B A L S   &   P Y T E S T   F I X T U R E S
+# =========================================================
 _MSG_HDR_CUSTOM_ = 'Test Header'
 _MSG_HDR_DEFAULT_ = ' [DEBUG'
 
@@ -15,6 +18,9 @@ _DATA_DICT_ = {'one':1, 'two':2, 'three':3, 'four':4, 'five':5}
 _DATA_DICT_AS_PP_STRING_ = "{'five': 5, 'four': 4, 'one': 1, 'three': 3, 'two': 2}"
 
 
+# =========================================================
+#                T E S T   F U N C T I O N S
+# =========================================================
 def test_debug_msg_missing_required():
     with pytest.raises(TypeError) as excinfo:
         src.utils.debug.debug.debug_msg()
