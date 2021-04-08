@@ -10,6 +10,8 @@ from dateutil import parser
 
 from .utils.debug.debug import debug_msg
 from .utils.settings import read_settings, save_settings, show_settings, isvalid_settings
+# from .sensors.sensehat import init_sensor as init_SenseHat
+# from .sensors.speedtest import run_speedtest, save_speed_data, get_speed_data
 
 _APP_NAME_: str = 'pired'
 _APP_CONFIG_: str = 'config.ini'
@@ -20,7 +22,10 @@ _APP_SLEEP_: int = 60
 _APP_BITS_: str = 'bits'
 
 _DB_NAME_: str = 'scilab'
-_DB_TABLE_: str = 'piRed'
+
+_SENSOR_WEATHER_: str = 'OpenWeather'
+_SENSOR_SENSEHAT_: str = 'SenseHat'
+_SENSOR_SPEED_: str = 'SpeedTest'
 
 
 # =========================================================

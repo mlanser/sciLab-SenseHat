@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""The setup script."""
+"""Setup script for the piRED custom app."""
 
 from setuptools import setup, find_packages
 
@@ -11,17 +11,19 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'Click>=7.0', 
+    'Click>=7.0',
     'configparser',
     'numpy',
+    'pandas',
     'python-dateutil',
     'pytz',
     'requests',
     'tzlocal',
-    'Pillow',
-    'evdev',
     'rich',
     'pretty_errors',
+    'speedtest-cli',
+    'Pillow',
+    'evdev',
 ]
 
 setup_requirements = [
@@ -49,7 +51,7 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Operating System :: OS Independent',
     ],
-    description="This sciLab app collects and stores data frome the RPI SenseHAT component, OpenWeather API, etc. It is specifically designed to run on the 'pired' unit (RP3 B+).",
+    description="This is another custom sciLab app and it's specifically designed to run on the 'pired' unit (RP3 B+). Its main purpose is to collect and store environmental data from the RPI SenseHAT component, OpenWeather API, etc.",
     entry_points={
         'console_scripts': [
             'pired=src.cli:main',

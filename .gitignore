@@ -161,4 +161,6 @@ _NUKE_
 _OLD_
 _temp_*.*
 nuke*.*
+libs/*
+!libs/__init__.py
 
